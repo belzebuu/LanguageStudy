@@ -1,0 +1,153 @@
+---
+title: "Bilingualism"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(formatR.arrow=TRUE, width=68, digits=5,show.signif.stars = TRUE)
+library(ggplot2)
+library(party)
+library(dplyr)
+library(lme4)
+library(lmerTest)
+library(lmtest)
+```
+
+## R Markdown
+
+We load the data and remove the cases with NA values.
+```{r data, echo=FALSE}
+D0<-read.csv("orientation.csv",na.strings="Err:512")
+#D0<-na.omit(D0)
+#D<-rbind(data.frame(D0[1:23],time=D0[,24],type="MATCH"),data.frame(D0[1:23],time=D0[,25],type="MISMATCH"))
+D1<-D0 %>% select(Name,CoR,Hand,EO,List,CEF,SRRC,PRE,POST1,POST2,STAY,LEAYRS,HRSD,RPV,AMGE,AMSP)#,time,type) 
+# %>% transmute(LanguageAge=Age-AoA)
+# D2<-D1[,c("Hand")] %>% mutate_each(funs(factor))
+D1$Name<-factor(D1$Name)
+D1$Hand<-factor(D1$Hand)
+D1$EO<-factor(D1$EO)
+D1$List<-factor(D1$List)
+D1$STAY<-factor(D1$STAY)
+
+D1$CEF<-factor(D1$CEF,levels=c(3:5),ordered=TRUE)
+#D1$SRRC<-factor(D1$SRRC,levels=c(1:5),ordered=TRUE)
+#D1$AMGE<-factor(D1$AMGE,levels=c(1:5),ordered=TRUE)
+#D1$AMSP<-factor(D1$AMSP,levels=c(1:5),ordered=TRUE)
+#D1$RPV<-factor(D1$RPV,levels=c(1:5),ordered=TRUE)
+#i <- which(rownames(D1)=="1071")
+#D1<-D1[-i,]
+```
+
+
+```{r data2}
+str(D1)
+```
+
+```{r data3}
+L0 <- read.csv("Amatch.csv",na.strings="Err:512",sep=";",header=FALSE)
+L1 <- reshape(L0,direction="long",varying=list(2:9),idvar="id",ids=1:NROW(L0),times=1:8,timevar = "order")
+names(L1)<-c("Name","Order","Time","ID")
+DM<-left_join(D1,L1,by="Name")
+
+L0 <- read.csv("Amismatch.csv",na.strings="Err:512",sep=";",header=FALSE)
+L1 <- reshape(L0,direction="long",varying=list(2:9),times=1:8,timevar = "order")
+names(L1)<-c("Name","Order","Time","ID")
+DMM<-left_join(D1,L1,by="Name")
+
+D0<-rbind(data.frame(DM[1:19],type="MATCH"),data.frame(DMM[1:19],type="MISMATCH"))
+D<-na.omit(D0) # lmer does this already
+D$Name<-factor(D$Name)
+head(D)
+count(D,Name,type)
+```
+There are different number of measurments. We balance by sampling.
+
+```{r sample}
+DD <- D %>% group_by(Name,type) %>% filter(length(Time)>4) %>% sample_n(5,replace=FALSE)
+## we might want to study only those with a decent result in the test (others might be outliers)
+D2 <- D %>% filter(POST1>75) %>% filter(POST2>75)
+count(D2,Name,type)$n
+```
+
+```{r plots, echo=TRUE}
+ss <- sample(levels(D$Name), 15)
+q<-ggplot(data=subset(D,Name %in% ss), aes(y=Time, x=Order, color=type))
+q<-q+facet_wrap(~Name,ncol=5,drop=TRUE)
+q<-q+geom_point()
+#q<-q+geom_smooth(method=lm,se=FALSE)
+q<-q+theme(legend.position="top") 
+q<-q+scale_y_log10()
+print(q)
+```
+
+```{r mixedmodels}
+## op <- options(contrasts = c("contr.sum", "contr.poly"))
+DLM <- D2
+lm.0 <- lm(log(Time) ~ type + CoR + Hand + EO + List + CEF + SRRC + PRE + POST1 + POST2 + STAY 
+           + LEAYRS + HRSD + RPV + AMGE + AMSP, 
+           data = DLM)
+lmm.0 <- lmer(log(Time) ~ type + CoR + Hand + EO + List + CEF + SRRC + PRE + POST1 + POST2 + STAY 
+              + LEAYRS + HRSD + RPV + AMGE + AMSP 
+              + (1 | Name), 
+              data = DLM, REML = FALSE)
+lmm.1 <- lmer(log(Time) ~ type + CoR + Hand + EO + List + CEF + SRRC + PRE + POST1 + POST2 + STAY 
+              + LEAYRS + HRSD + RPV + AMGE + AMSP
+              + (1 + Order | Name),
+              data = DLM, REML = FALSE)
+#glmm.0 <- glmer(Time ~ type + CoR + Hand + EO + List + CEF + SRRC + PRE + POST1 + POST2 + STAY 
+#              + LEAYRS + HRSD + RPV + AMGE + AMSP
+#              + (1 | Name),
+#              data = DLM, family=Gamma)
+lrtest(lm.0,lmm.0,lmm.1)
+print(summary(lmm.0))
+print(summary(lmm.1))
+```
+
+
+
+
+```{r mlr2, message=FALSE, warning=FALSE}
+# print(anova(m2),signif.stars=TRUE)
+```
+
+
+## Diagnostic plots
+
+```{r plotlmr, fig.height=8}
+lmm<-lmm.1
+par(mfrow=c(2,2))
+# plot(lm4,which=1:4)
+
+plot(fitted(lmm, type = "response"), residuals(lmm, type = "response"), main = "Conditional residuals", xlab = "Predicted", ylab = "Residuals")
+
+res <- residuals(lmm, type = "response")
+qqnorm(res, main = "Conditional residuals, QQplot")
+qqline(res)
+
+x <- model.matrix(lm.0)
+pred <- x %*% fixef(lmm)
+res <- D2$Time - pred
+plot(pred, res, main = "Marginal residuals", xlab = "Predicted", ylab = "Residuals")
+qqnorm(res, main = "Marginal residuals, QQplot")
+qqline(res)
+
+```
+
+From the qplot we see that the point 1071 is an outlier:
+With hindsight we already remove it above. Afterwards the qqplot looks perfectly normal.
+
+
+## Regression tree
+
+Another type of analysis by means of regression tree:
+
+```{r regtree}
+ct <- ctree(data=D2,Time~ type + CoR + Hand + EO + List + CEF + SRRC + PRE + POST1 + POST2 + STAY + LEAYRS + HRSD + RPV + AMGE + AMSP )
+ct
+plot(ct)
+```
+
+From the plot we understand that regression trees find only two factors
+POST1 and Hand and their interaction as relevant expalin differences in
+the response time.

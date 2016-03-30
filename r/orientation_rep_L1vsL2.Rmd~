@@ -1,0 +1,285 @@
+---
+title: "Bilingualism"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(formatR.arrow=TRUE, width=68, digits=5,show.signif.stars = TRUE)
+library(ggplot2)
+library(party)
+library(dplyr)
+library(lme4)
+library(lmerTest)
+library(lmtest)
+library(stringr)
+```
+
+## Data analysis
+
+We load the data and remove the cases with NA values.
+```{r data, echo=FALSE}
+D0<-read.csv("data/orientation.csv",na.strings="Err:512")
+#D0<-na.omit(D0)
+#D<-rbind(data.frame(D0[1:23],time=D0[,24],type="MATCH"),data.frame(D0[1:23],time=D0[,25],type="MISMATCH"))
+D1<-D0 %>% select(Name,CoR,Hand,EO,List,CEF,SRRC,PRE,POST1,POST2,STAY,LEAYRS,HRSD,RPV,AMGE,AMSP)#,time,type) 
+# %>% transmute(LanguageAge=Age-AoA)
+# D2<-D1[,c("Hand")] %>% mutate_each(funs(factor))
+D1$Name<-factor(D1$Name)
+D1$Hand<-factor(D1$Hand)
+D1$EO<-factor(D1$EO)
+D1$List<-factor(D1$List)
+D1$STAY<-factor(D1$STAY)
+
+D1$CEF<-factor(D1$CEF,levels=c(3:5),ordered=TRUE)
+#D1$SRRC<-factor(D1$SRRC,levels=c(1:5),ordered=TRUE)
+#D1$AMGE<-factor(D1$AMGE,levels=c(1:5),ordered=TRUE)
+#D1$AMSP<-factor(D1$AMSP,levels=c(1:5),ordered=TRUE)
+#D1$RPV<-factor(D1$RPV,levels=c(1:5),ordered=TRUE)
+#i <- which(rownames(D1)=="1071")
+#D1<-D1[-i,]
+```
+
+
+```{r data3, echo=FALSE, warning=FALSE}
+L0 <- read.csv("data/Amatch.csv",na.strings="Err:512",sep=";",header=FALSE)
+L1 <- reshape(L0,direction="long",varying=list(2:9),idvar="id",ids=1:NROW(L0),times=1:8,timevar = "order")
+names(L1)<-c("Name","Order","Time","ID")
+DM<-left_join(D1,L1,by="Name")
+
+L0 <- read.csv("data/Amismatch.csv",na.strings="Err:512",sep=";",header=FALSE)
+L1 <- reshape(L0,direction="long",varying=list(2:9),times=1:8,timevar = "order")
+names(L1)<-c("Name","Order","Time","ID")
+DMM<-left_join(D1,L1,by="Name")
+
+D0<-rbind(data.frame(DM[1:19],type="MATCH"),data.frame(DMM[1:19],type="MISMATCH"))
+D<-na.omit(D0) # lmer does this already
+D$Name<-factor(D$Name)
+# head(D)
+# count(D,Name,type)
+D.good <- D %>% filter(POST1>75) %>% filter(POST2>75)
+DLM <- D
+```
+
+Let's have a glimpse at the data:
+
+```{r dataoverview}
+# tbl_df(DLM)
+glimpse(DLM)
+```
+
+
+<!-- There are different number of measurments. We balance by sampling. -->
+
+```{r filter, echo=FALSE, eval=FALSE}
+#DD <- D %>% group_by(Name,type) %>% filter(length(Time)>4) %>% sample_n(5,replace=FALSE)
+## we might want to study only those with a decent result in the test (others might be outliers)
+#count(D2,Name,type)$n
+```
+
+The variable Order represents the question number. It will be treated as
+a factor (ie, qualitative factor) in the linear model analysis. We
+sample 15 persons and plot the log-transform of the response time on the
+questions with respect to 
+
+```{r plots, echo=FALSE}
+D$Name <- factor(str_trim(D$Name))
+ss <- sample(levels(D$Name), 15)
+q<-ggplot(data=subset(D,Name %in% ss), aes(y=Time, x=Order, color=type))
+q<-q+facet_wrap(~Name,ncol=5,drop=TRUE)
+q<-q+geom_point()
+#q<-q+geom_smooth(method=lm,se=FALSE)
+q<-q+theme(legend.position="top") 
+q<-q+scale_y_log10()
+print(q)
+```
+
+We construct the linear model. We log-transform time as it gives better
+dignostic plots. In the model we have 8 questions per each
+type, matched/nonmatched. Hence questions are nested within the type. We
+specify a model with random-effects associated to the subjects and to
+the questions nested in the type. These factors, subjects and questions
+are fully crossed, although we might have some missing data due to
+misclassification. In R, the linear mixed model looks as follows. 
+
+<!--
+## op <- options(contrasts = c("contr.sum", "contr.poly"))
+# type + CoR + Hand + EO + List + CEF + SRRC + PRE + POST1 + POST2 + STAY + LEAYRS + HRSD + RPV + AMGE + AMSP, 
+-->
+
+```{r mixedmodels1, warning=FALSE}
+lm.0 <- lm(log(Time) ~ 1, data = DLM)
+# LEAYRS AMSP AMGE
+lmm.0 <- lmer(log(Time) ~ (1 | Name)+ (1 | type:List:Order), data = DLM)
+lrtest(lm.0,lmm.0)
+```
+
+The log-Likelihood test confirms that the random-effects due to these two
+factors are statistically significant. 
+We now focus on the fixed-effects in a forward stepwise search.
+
+
+```{r mixedmodels2, warning=FALSE}
+lmm.1 <- update(lmm.0, .~. + type)
+lrtest(lmm.0,lmm.1)
+
+lmm.2 <- update(lmm.1, .~. + HRSD)
+lrtest(lmm.1,lmm.2)
+
+lmm.3 <- update(lmm.2, .~. + RPV)
+lrtest(lmm.2,lmm.3)
+
+lmm.4 <- update(lmm.3, .~. + AMGE)
+lrtest(lmm.3,lmm.4)
+
+lmm.5 <- update(lmm.4, .~. + AMSP)
+lrtest(lmm.4,lmm.5)
+```
+
+Hence, the fixed effects of  type, HRSD, RPV, AMGE, AMSP  are all
+statistically significant. How about interactions?
+
+
+```{r mixedmodels3}
+lmm.6 <- lmer(log(Time) ~ (type + HRSD + RPV + AMGE + AMSP)^2
+              + (1 | Name)+ (1 | type:Order), data = DLM)
+lrtest(lmm.5,lmm.6)
+```
+
+It is evident that interactions between all factors should be included in the model as well.
+
+Finally, model comparison statistics using likelihood test comparisons:
+
+```{r resume}
+anova(lmm.0,lmm.1,lmm.2,lmm.3,lmm.4,lmm.5,lmm.6)
+```
+
+Why we get here that they are all insignificant instead??? Which test
+was used?
+
+
+## Diagnostic plots
+
+```{r plotlmr, fig.height=8}
+lmm<-lmm.5
+par(mfrow=c(3,2))
+# plot(lm4,which=1:4)
+
+plot(fitted(lmm, type = "response"), residuals(lmm, type = "response"),
+     main = "Conditional residuals", xlab = "Predicted", ylab = "Residuals")
+
+res <- residuals(lmm, type = "response")
+qqnorm(res, main = "Conditional residuals, QQplot")
+qqline(res)
+
+lm.0 <- lm(log(Time) ~ (type + HRSD + RPV + AMGE + AMSP), data = DLM)
+x <- model.matrix(lm.0)
+pred <- x %*% fixef(lmm)
+res <- DLM$Time - pred
+plot(pred, res, main = "Marginal residuals", xlab = "Predicted", ylab = "Residuals")
+qqnorm(res, main = "Marginal residuals, QQplot")
+qqline(res)
+
+```
+
+```{r plot1, fig.width=3, echo=FALSE, eval=FALSE}
+plot(lmm,type=c("p","smooth"))
+plot(lmm,sqrt(abs(resid(.))) ~ fitted(.), type=c("p","smooth"))
+qqmath(lmm,id=0.005)
+# package HLMdiag influence.ME
+```
+
+
+The joint qqplot looks normal. The marginal looks less nice. 
+
+
+
+```{r summary, message=FALSE, warning=TRUE}
+summary(lmm)
+print(anova(lmm),signif.stars=TRUE)
+```
+
+
+
+<!--
+## Regression tree
+
+Another type of analysis by means of regression tree:
+
+```{r regtree, eval=FALSE, echo=FALSE}
+## ct <- ctree(data=D2,Time~ type + CoR + Hand + EO + List + CEF + SRRC + PRE + POST1 + POST2 + STAY + LEAYRS + HRSD + RPV + AMGE + AMSP )
+ct <- ctree(data=DLM,log(Time)~ type + HRSD + RPV + AMGE + AMSP)
+ct
+plot(ct)
+```
+
+
+-->
+
+
+
+
+
+# Bootstrapped confidence intervals
+
+
+
+```{r confint}
+#op <- options(contrasts = c("contr.sum", "contr.poly"))
+## fm01ML <- lmer(Yield ~ 1|Batch, Dyestuff, REML = FALSE)
+## see ?"profile-methods"
+mySumm <- function(.) { s <- sigma(.)
+    c(beta =getME(., "beta"), sigma = s, sig01 = unname(s * getME(., "theta"))) }
+(t0 <- mySumm(lmm)) # just three parameters
+## alternatively:
+mySumm2 <- function(.) {
+   c(beta=fixef(.),sigma=sigma(.), sig01=sqrt(unlist(VarCorr(.))))
+}
+
+set.seed(101)
+## 3.8s (on a 5600 MIPS 64bit fast(year 2009) desktop "AMD Phenom(tm) II X4 925"):
+system.time( boo01 <- bootMer(lmm, mySumm, nsim = 100) )
+
+## to "look" at it
+require("boot") ## a recommended package, i.e. *must* be there
+boo01
+## note large estimated bias for sig01
+## (~30% low, decreases _slightly_ for nsim = 1000)
+
+## extract the bootstrapped values as a data frame ...
+head(as.data.frame(boo01))
+
+## ------ Bootstrap-based confidence intervals ------------
+
+## warnings about "Some ... intervals may be unstable" go away
+##   for larger bootstrap samples, e.g. nsim=500
+
+## intercept
+(bCI.1 <- boot.ci(boo01, index=1, type=c("norm", "basic", "perc")))# beta
+
+## Residual standard deviation - original scale:
+(bCI.2  <- boot.ci(boo01, index=2, type=c("norm", "basic", "perc")))
+## Residual SD - transform to log scale:
+(bCI.2L <- boot.ci(boo01, index=2, type=c("norm", "basic", "perc"),
+                   h = log, hdot = function(.) 1/., hinv = exp))
+
+## Among-batch variance:
+(bCI.3 <- boot.ci(boo01, index=3, type=c("norm", "basic", "perc"))) # sig01
+
+## Extract all CIs (somewhat awkward)
+bCI.tab <- function(b,ind=length(b$t0), type="perc", conf=0.95) {
+    btab0 <- t(sapply(as.list(seq(ind)),
+                    function(i)
+                    boot.ci(b,index=i,conf=conf, type=type)$percent))
+    btab <- btab0[,4:5]
+    rownames(btab) <- names(b$t0)
+    a <- (1 - conf)/2
+    a <- c(a, 1 - a)
+    pct <- stats:::format.perc(a, 3)
+    colnames(btab) <- pct
+    return(btab)
+}
+bCI.tab(boo01)
+
+## Graphical examination:
+plot(boo01,index=3)
