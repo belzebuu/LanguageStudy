@@ -48,7 +48,9 @@ glimpse(DLM)
 <!--We removed the subjects that had `POST1` or `POST2` smaller than 75%. -->
 
 We consider the following independent variables:
+
 * `LEAYRS` a numerical variable with values ranging from 1 to 16. Learning in years.
+
 * `POST1` a percentage scaled to lay between 0 and 10. It indicates the post test proficency. 
 * `PRE` a percentage scaled to lay between 0 and 10. It indicates the previous knowledge.
 <!--- `RPV`  a numerical variable with values ranging from 1 to 4.5.-->
