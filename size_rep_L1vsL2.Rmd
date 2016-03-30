@@ -1,0 +1,151 @@
+---
+title: 'Size: L1 vs L2'
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(formatR.arrow=TRUE, width=68, digits=5,show.signif.stars = TRUE)
+library(ggplot2)
+library(party)
+library(dplyr)
+library(lme4)
+#library(lmerTest)
+#library(lmtest)
+library(stringr)
+#library(merTools)
+library(latticeExtra)
+```
+
+## Data analysis
+
+
+```{r data, echo=FALSE}
+load("size.RData")
+DLM<-SizeL1L2
+
+num <- DLM %>% group_by(Lang) %>% summarize(length(unique(Name)))
+```
+
+We have `r as.numeric(num[2,2])` subjects for L1 and `r as.numeric(num[1,2])` for L2 for a total of  `r dim(DLM)[1]` observations.
+
+```{r naomit, echo=FALSE}
+DLM<-na.omit(DLM)
+DLM$Name<-factor(DLM$Name)
+num <- DLM %>% group_by(Lang) %>% summarize(length(unique(Name)))
+```
+
+After removal of entries with missing data due to wrong answers, we have `r as.numeric(num[2,2])` subjects for L1 and `r as.numeric(num[1,2])` subjects for L2 for a total of `r dim(DLM)[1]` observations left.
+
+
+```{r dataoverview, eval=FALSE, echo=FALSE}
+# Let's have a glimpse at the data:
+# tbl_df(DLM)
+glimpse(DLM)
+```
+
+The situation is the same as in the Orientation L1 vs L2 case.
+
+Our starting model is: 
+`lmer(log(Time) ~ type + Lang + (1 | List:Name) + (1 | List:type:Order), data = DLM)`
+In this case, a likelihood ratio test gives as significant also the `type`. The second order interactions are still not significant. The random effects are significant. This is also supported by the portion of standard deviation of the residuals that is imputable to the two random effects. 
+
+```{r basicmodel, warning=TRUE}
+lmm<- lmer(log(Time) ~ type + Lang + (1 | List:Name)+ (1 | List:type:Order), data = DLM, REML=FALSE)
+summary(lmm)
+```
+
+
+```{r mixedmodels1, warning=FALSE, eval=FALSE, echo=FALSE}
+lm.0 <- lm(log(Time) ~ 1, data = DLM)
+# LEAYRS AMSP AMGE
+lmm.0 <- lmer(log(Time) ~ (1 | List:Name)+ (1 | List:Name:Order), data = DLM)
+AIC(lm.0,lmm.0)
+```
+
+
+```{r mixedmodels2, warning=FALSE}
+lmm.0 <- lmer(log(Time) ~ (1 | List:Name)+ (1 | List:type:Order), data = DLM)
+lmm.1 <- update(lmm.0, .~. + type)
+anova(lmm.0,lmm.1)
+
+lmm.2 <- update(lmm.0, .~. + Lang)
+anova(lmm.1,lmm.2)
+
+lmm.3 <- update(lmm, .~. + (type+Lang)^2)
+anova(lmm,lmm.3)
+
+lmm.4 <- update(lmm,.~.-(1 | List:Name))
+anova(lmm.4,lmm)
+
+lmm.5 <- update(lmm,.~.-(1 | List:type:Order))
+anova(lmm.5,lmm)
+```
+
+The figures report the random and fixed effects. As above, fixed effects are tranformed back in the original linear scale of milliseconds. 
+We can conclude that L1 speakers have shorter reaction times than L2 speakers under both experimental conditions of MATCH and MISMATCH questions. In addtion, MISMATCH questions seem slightly more difficult to be answered. This effect was shown to be significant from a bootstrap analysis on the transformed data.
+
+```{r randomeff, height=6, width=4, echo=FALSE}
+#plotREsim(REsim(lmm, n.sims = 100), stat = 'median', sd = TRUE)
+source("lib.R")
+#randeff.plot(lmm,"Name")
+#randeff.plot(lmm,"type:List:Order")
+randeff.plot2(lmm)
+```
+
+```{r fixedeff, height=6, width=4, echo=FALSE}
+#plotFEsim(FEsim(lmm, n.sims = 100), level = 0.9, stat = 'median', intercept = FALSE)
+```
+
+
+```{r fixedplot, height=4, width=5, echo=FALSE}
+plot(effects::Effect(c("Lang", "type"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",xlab="Speakers",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
+#plot(effects::Effect(c("type", "Lang"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",xlab="Speakers",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
+```
+
+
+
+```{r fixedeff2, height=6, width=4,eval=FALSE, echo=FALSE}
+require(merTools)
+plotFEsim(FEsim(lmm, n.sims = 100), level = 0.9, stat = 'median', intercept = FALSE)
+```
+
+
+## Diagnostic plots
+
+```{r plotlmr, fig.height=8}
+#lmm<- glmer(Time ~ Lang + type + (1 | Name)+ (1 | type:List:Order), data = DLM,family=Gamma(link = "identity"))
+par(mfrow=c(2,2))
+# plot(lm4,which=1:4)
+
+plot(fitted(lmm, type = "response"), residuals(lmm, type = "response"),
+     main = "Conditional residuals", xlab = "Predicted", ylab = "Residuals")
+
+res <- residuals(lmm, type = "response")
+qqnorm(res, main = "Conditional residuals, QQplot")
+qqline(res)
+
+lm.0 <- lm(log(Time) ~ type + Lang, data = DLM)
+x <- model.matrix(lm.0)
+pred <- x %*% fixef(lmm)
+res <- DLM$Time - pred
+plot(pred, res, main = "Marginal residuals", xlab = "Predicted", ylab = "Residuals")
+qqnorm(res, main = "Marginal residuals, QQplot")
+qqline(res)
+
+```
+
+```{r plot1, fig.width=3, echo=FALSE, eval=FALSE}
+plot(lmm,type=c("p","smooth"))
+plot(lmm,sqrt(abs(resid(.))) ~ fitted(.), type=c("p","smooth"))
+qqmath(lmm,id=0.005)
+# package HLMdiag influence.ME
+```
+
+
+The joint qqplot looks normal. The marginal looks less nice. 
+
+
+
+
+

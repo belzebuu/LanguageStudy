@@ -1,0 +1,182 @@
+---
+title: 'Orientation: L1 vs L2'
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(formatR.arrow=TRUE, width=68, digits=5,show.signif.stars = TRUE)
+library(ggplot2)
+library(party)
+library(dplyr)
+library(lme4)
+#library(lmerTest)
+#library(lmtest)
+library(stringr)
+library(latticeExtra)
+```
+
+## Data analysis
+
+
+```{r data, echo=FALSE}
+load("orientation.RData")
+DLM<-OrientationL1L2
+
+num <- DLM %>% group_by(Lang) %>% summarize(length(unique(Name)))
+```
+
+We have `r as.numeric(num[2,2])` subjects for L1 and `r as.numeric(num[1,2])` for L2 for a total of  `r dim(DLM)[1]` observations.
+
+```{r naomit, echo=FALSE}
+DLM<-na.omit(DLM)
+DLM$Name<-factor(DLM$Name)
+num <- DLM %>% group_by(Lang) %>% summarize(length(unique(Name)))
+```
+
+After removal of entries with missing data due to wrong answers, we have `r as.numeric(num[2,2])` subjects for L1 and `r as.numeric(num[1,2])` subjects for L2 for a total of `r dim(DLM)[1]` observations left.
+
+```{r dataoverview, eval=FALSE, echo=FALSE}
+# Let's have a glimpse at the data:
+# tbl_df(DLM)
+glimpse(DLM)
+```
+
+We set up a categorical variable, `Lang`, to inform about the speakers L1 and L2 and a another categorical variable, `type`, to inform about the type of question MATCH and MISMATCH. Each different question is identified by the variable `Order` that we treat as a categorical variable as well, since we assume no influence of the order in which the question was posed. Finally, we record in the variable `List` the list from which the question is drawn, that is, list A or list B. The response variable is reaction time measured in milliseconds.
+
+We are not intersted in the effect of the specific questions nor in those of the specific subjects. However, we are are interested in knowing whether these variables are important for the variance of responses. Hence, we
+specify a mixed effects model with random effects associated to the subjects and to
+the question order and with fixed effects associated with `type` and `Lang`.
+
+In the experiment, we assigned randomly subjects to the two lists. Then we drew 8 questions per each
+type (matched/mismatched) from each list. Hence question `order` is nested within `type` and `List` and subjects (`Name`) are nested within `List`.
+Within the list nesting subjects and questions are fully crossed. We fitted our model in R using the package `lme4` [add reference].
+In the syntax of that package the linear mixed model looks as follows: 
+`lmer(log(Time) ~ type + Lang + (1 | List:Name) + (1 | List:type:Order), data = DLM)`.
+We log-transformed the response variable as diagnostic plots (conditional and marginal residuals and qqplot) improved considerably. A Gamma family transformation with log link function yield much worse diagnostic plots.  The distribution of reaction times is right skewed and never reaches zero. Hence, logarithm transformation or generalized linear mixed models with Gamma family and log link function are commonly choice.  
+
+
+```{r summary}
+lmm<- lmer(log(Time) ~ type + Lang + (1 | List:Name)+ (1 | List:type:Order), data = DLM,REML=FALSE)
+#print(anova(lmm),signif.stars=TRUE)
+summary(lmm, transform="log")
+```
+
+We observe that the two random effects, subjects and questions, account for a good portion of the standard deviation of the residuals: 0.2569, 0.1553, 0.3839 respectively. The model is translated by means of a significant intercept. The estimated effects are in the transformed scale.
+
+Note that due to the removal of entries with missing values, our experimental set up is not balanced. Hence, we do not report p-values for F or t statistics as there are no analytical results for null distributions of parameter estimates in complex situations (e.g., unbalanced or partially crossed designs) [cite Bates @Article{,
+    title = {Fitting Linear Mixed-Effects Models Using {lme4}},
+    author = {Douglas Bates and Martin M{\"a}chler and Ben Bolker and Steve Walker},
+    journal = {Journal of Statistical Software},
+    year = {2015},
+    volume = {67},
+    number = {1},
+    pages = {1--48},
+    doi = {10.18637/jss.v067.i01},
+  }].
+The likelihood ratio test for each individual factors results non significant at a level of 0.05 for the `type` (0.8815) and for the interaction `type:Lang` (0.3291). The other fixed and random effects are all significant. The package lmerTest makes availbale an analysis of variance of type III  with  Satterthwaite 
+approximation for degrees of freedom and a backward elimination of non-significant effects. Both these two procedures confirm our results that  `type` and `type:Lang` are not significant.
+
+
+
+```{r mixedmodels2, warning=TRUE}
+lmm.1 <- update(lmm, .~. - type)
+anova(lmm,lmm.1)
+
+lmm.2 <- update(lmm, .~. - Lang)
+anova(lmm,lmm.2)
+
+lmm.3 <- update(lmm, .~. + (type+Lang)^2)
+anova(lmm,lmm.3)
+
+lmm.4 <- update(lmm, .~. - (1|List:Name))
+anova(lmm,lmm.4)
+
+lmm.5 <- update(lmm, .~. - (1|List:type:Order))
+anova(lmm,lmm.5)
+```
+
+
+We plot the random and the fixed effects together with their 95% confidence levels in the Figure. The confidence levels are obtained by the estimated standard deviation and the normal distribution. However, other analysis with boostrapped confidence intervals confirmed the same conclusions.
+
+```{r confintstd, echo=FALSE, eval=FALSE}
+confint(lmm,method="Wald")
+confint(lmm,method="boot")
+```
+
+```{r randomeff, height=6, width=4, echo=FALSE}
+#plotREsim(REsim(lmm, n.sims = 100), stat = 'median', sd = TRUE)
+source("lib.R")
+#randeff.plot(lmm,"Name")
+#randeff.plot(lmm,"type:List:Order")
+randeff.plot2(lmm)
+```
+
+```{r fixedeff, height=6, width=4, echo=FALSE}
+#plotFEsim(FEsim(lmm, n.sims = 100), level = 0.9, stat = 'median', intercept = FALSE)
+```
+
+
+```{r fixedplot, height=4, width=5, echo=FALSE}
+plot(effects::Effect(c("Lang", "type"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",xlab="Speakers",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
+```
+
+
+From the figure we can observe that the random effects cause often a significant effect by shifting the intercept by a quantity larger than zero. For the fixed effects we transformed back the effects in the linear time scale of milliseconds. It is evident that L1 speakers have a shorter reaction time and that the type does not have a significant impact.
+
+
+<!--
+## op <- options(contrasts = c("contr.sum", "contr.poly"))
+# type + CoR + Hand + EO + List + CEF + SRRC + PRE + POST1 + POST2 + STAY + LEAYRS + HRSD + RPV + AMGE + AMSP, 
+-->
+
+
+## Diagnostic plots
+
+```{r plotlmr, fig.height=8, echo=FALSE}
+#lmm<- glmer(Time ~ Lang + type + (1 | Name)+ (1 | type:List:Order), data = DLM,family=Gamma(link = "log"))
+par(mfrow=c(2,2))
+# plot(lm4,which=1:4)
+
+plot(fitted(lmm, type = "response"), residuals(lmm, type = "response"),
+     main = "Conditional residuals", xlab = "Predicted", ylab = "Residuals")
+
+res <- residuals(lmm, type = "response")
+qqnorm(res, main = "Conditional residuals, QQplot")
+qqline(res)
+
+lm.0 <- lm(log(Time) ~ type + Lang, data = DLM)
+x <- model.matrix(lm.0)
+pred <- x %*% fixef(lmm)
+res <- DLM$Time - pred
+plot(pred, res, main = "Marginal residuals", xlab = "Predicted", ylab = "Residuals")
+qqnorm(res, main = "Marginal residuals, QQplot")
+qqline(res)
+
+```
+
+```{r plot1, fig.width=3, echo=FALSE, eval=FALSE}
+plot(lmm,type=c("p","smooth"))
+plot(lmm,sqrt(abs(resid(.))) ~ fitted(.), type=c("p","smooth"))
+qqmath(lmm,id=0.005)
+# package HLMdiag influence.ME
+```
+
+
+The joint qqplot looks normal. The marginal looks less nice. 
+
+
+## Tables with p-values (Satterwhite approximation)
+
+It could be possible to include a syntetic ANOVA table like this:
+
+```{r anova, message=FALSE, warning=FALSE}
+require(lmerTest)
+lmm<- lmer(log(Time) ~ type + Lang + (1 | List:Name)+ (1 | List:type:Order), data = DLM,REML=FALSE)
+anova(lmm)
+```
+however, as explained above it is controversial.
+It is also possible to have t-test and p-values like this:
+```{r sum}
+summary(lmm)
+```

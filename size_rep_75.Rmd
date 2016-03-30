@@ -1,0 +1,167 @@
+---
+title: 'Size: 75% POST1 FILTERED L2'
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(formatR.arrow=TRUE, width=68, digits=5,show.signif.stars = TRUE)
+library(ggplot2)
+library(party)
+library(dplyr)
+library(lme4)
+#library(lmerTest)
+#library(lmtest)
+library(stringr)
+#library(merTools)
+library(latticeExtra)
+```
+
+
+## Data analysis
+
+We load the data and remove the cases with NA values.
+```{r data, echo=FALSE}
+load("size.RData")
+DLM<-Size
+```
+
+We have `r nlevels(DLM$Name)` subjects for a total of `r dim(DLM)[1]` observations. 
+
+```{r naomit, echo=FALSE}
+DLM <- DLM %>% filter(POST1>7.5) %>% filter(POST2>7.5)
+DLM<-na.omit(DLM)
+DLM$Name<-factor(DLM$Name)
+```
+
+After removal of subjects with POST1 and POST2 <75% and entries with missing data due to wrong answers, we have `r nlevels(DLM$Name)` subjects and `r dim(DLM)[1]` observations left.
+
+```{r dataoverview, eval=FALSE, echo=FALSE}
+# Let's have a glimpse at the data:
+# tbl_df(DLM)
+glimpse(DLM)
+```
+
+We consider the following independent variables:
+- `LEAYRS` a numerical variable with values ranging from 1 to 16. Learning in years.
+- `LEA` a percentage scaled to lay between 0 and 10. It indicates the novelty of target construction, measured by subtracting pretest score from posttestscore (POST1-PRE). This value indicates the previous knowledge of construction.
+<!--- `RPV`  a numerical variable with values ranging from 1 to 4.5.-->
+<!--- `AMGE`  a numerical variable with values ranging from 1 to 5.-->
+- `AMSP`  a numerical variable with values ranging from 1 to 5.
+- `HRSD`  a numerical variable with values ranging from 0 to 11.5. L2 use in hours per day.
+
+We rescaled some of these variables to be on similar scales. We treat these as fixed factors under study. In addition we have the random factors described earlier. The same modelling set up applies here. 
+
+Our base model is the following
+`lmm <- lmer(log(Time) ~ type + LEAYRS + LEA + AMSP + HRSD + (1 | List:Name) + (1 | List:type:Order), data = DLM)`
+
+```{r basicmodel}
+lmm <- lmer(log(Time) ~  type + LEAYRS + LEA + AMSP + HRSD + (1 | List:Name) + (1 | List:type:Order), data = DLM, REML=FALSE)
+summary(lmm)
+```
+
+We use a  manual, step-forward procedure with likelihood ratio test to see which of the fixed effects are significant.
+
+
+```{r mixedmodels2, warning=TRUE}
+lmm.0 <- lmer(log(Time) ~  (1 | List:Name) + (1 | List:type:Order), data = DLM)
+
+lmm.1 <- update(lmm.0, .~. + type)
+anova(lmm.0,lmm.1)
+
+lmm.2 <- update(lmm.0, .~.+LEAYRS)
+anova(lmm.0,lmm.2)
+
+lmm.3 <- update(lmm.0, .~. + LEA) 
+anova(lmm.0,lmm.3)
+
+lmm.4 <- update(lmm.0, .~. + AMSP)
+anova(lmm.0,lmm.4)
+
+lmm.5 <- update(lmm.0, .~. + HRSD)
+anova(lmm.0,lmm.5)
+```
+
+We conclude that only `AMSP` has a significant effect at a 0.05 level while `type` is significant at a 0.1 level.
+
+
+An automatic, step-backward procedure from the package lmerTest starting from a model that includes all second order fixed factor intereactions lead to a similar  conclusion: only the factor `AMSP` is kept in the model.
+
+
+```{r mixedmodels4, echo=FALSE, eval=FALSE}
+lmm.6 <- lmer(log(Time) ~ (type + LEAYRS + LEA + AMSP + HRSD)^2 + (1 | List:Name) + (1 | List:type:Order), data = DLM)
+ft<-step(lmm.6)
+ft
+```
+
+
+Finally, Analysis of Variance Table of type III  with  Satterthwaite 
+approximation for degrees of freedom leads to the same conclusions as the likelihood ratio test procedure. It is reported at the end of this document.
+
+
+```{r confintstd, eval=FALSE, echo=FALSE}
+confint(lmm,method="Wald")
+confint(lmm,method="boot")
+```
+
+
+The figures show random  and the fixed effects. Again the subject effects are significant. We back transformed the fixed effects in linear scale and added 0.95-confidence level bands. It is evident the reduction in reaction time as `AMSP` increases. Although `type` has an effect it is not large.
+
+```{r randomeff, height=4, width=6, echo=FALSE}
+#plotREsim(REsim(lmm, n.sims = 100), stat = 'median', sd = TRUE)
+source("lib.R")
+randeff.plot2(lmm)
+```
+
+```{r fixedeff, height=4, width=6, echo=FALSE}
+require(effects)
+plot(effects::Effect(c("AMSP","type"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
+#require(merTools)
+#plotFEsim(FEsim(lmm, n.sims = 100), level = 0.9, stat = 'median', intercept = FALSE)
+```
+
+
+
+## Diagnostic plots
+
+```{r plotlmr, fig.height=8}
+lmm<- lmer(log(Time) ~ (type + HRSD + LEAYRS + AMSP) + (1 | Name)+ (1 | type:List:Order), data = DLM)
+par(mfrow=c(3,2))
+# plot(lm4,which=1:4)
+
+plot(fitted(lmm, type = "response"), residuals(lmm, type = "response"),
+     main = "Conditional residuals", xlab = "Predicted", ylab = "Residuals")
+
+res <- residuals(lmm, type = "response")
+qqnorm(res, main = "Conditional residuals, QQplot")
+qqline(res)
+
+lm.0 <- lm(log(Time) ~ (type + HRSD + LEAYRS + AMSP), data = DLM)
+x <- model.matrix(lm.0)
+pred <- x %*% fixef(lmm)
+res <- DLM$Time - pred
+plot(pred, res, main = "Marginal residuals", xlab = "Predicted", ylab = "Residuals")
+qqnorm(res, main = "Marginal residuals, QQplot")
+qqline(res)
+
+```
+
+```{r plot1, fig.width=3, echo=FALSE, eval=FALSE}
+plot(lmm,type=c("p","smooth"))
+plot(lmm,sqrt(abs(resid(.))) ~ fitted(.), type=c("p","smooth"))
+qqmath(lmm,id=0.005)
+# package HLMdiag influence.ME
+```
+
+
+The joint qqplot looks normal. The marginal looks less nice. 
+
+
+## Anova Table with Satterwhite 
+
+```{r anova}
+require(lmerTest)
+lmm <- lmer(log(Time) ~  type + LEAYRS + (PRE + POST1)^2 + AMSP + HRSD + POST1*HRSD + (1 | List:Name) + (1 | List:type:Order), data = DLM, REML=FALSE)
+anova(lmm)
+summary(lmm)
+```
