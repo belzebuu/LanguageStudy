@@ -1,6 +1,6 @@
 ---
 title: 'Orientation: 75% POST1 FILTERED L2'
-output: word_document
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
@@ -88,7 +88,9 @@ We conclude that `LEAYRS` is significant at a 0.05 significance level, while `PR
 An automatic, step-backward procedure from the package lmerTest starting from a model that includes all second order fixed factor intereactions lead to a similar conclusion: the factors `type`, `LEA`, `AMSP`, `HRSD` are not significant while  `LEAYRS` is the only significant factor. An ANOVA, shown below, confirms this analysis with `LEAYRS` as the only significant factor.
 
 
-```{r mixedmodels4, echo=FALSE, eval=FALSE}
+
+```{r mixedmodels4, echo=TRUE, eval=TRUE, warning=FALSE}
+require(lmerTest)
 lmm.6 <- lmer(log(Time) ~ (type + LEAYRS + LEA + AMSP + HRSD)^2 + (1 | List:Name) + (1 | List:type:Order), data = DLM)
 ft<-step(lmm.6)
 ft

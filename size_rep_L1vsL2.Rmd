@@ -1,6 +1,6 @@
 ---
 title: 'Size: L1 vs L2'
-output: word_document
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
@@ -81,6 +81,7 @@ anova(lmm.4,lmm)
 lmm.5 <- update(lmm,.~.-(1 | List:type:Order))
 anova(lmm.5,lmm)
 ```
+
 
 The figures report the random and fixed effects. As above, fixed effects are tranformed back in the original linear scale of milliseconds. 
 We can conclude that L1 speakers have shorter reaction times than L2 speakers under both experimental conditions of MATCH and MISMATCH questions. In addtion, MISMATCH questions seem slightly more difficult to be answered. This effect was shown to be significant from a bootstrap analysis on the transformed data.

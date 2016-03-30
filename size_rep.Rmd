@@ -96,7 +96,7 @@ We conclude that only `AMSP` has a significant effect at a 0.05 level while the 
 An automatic, step-backward procedure from the package lmerTest starting from a model that includes all second order fixed factor intereactions lead to a different conclusion: the factors AMSP, POST1, HRSD and the interaction between these last two are significant.
 
 
-```{r mixedmodels4, echo=TRUE, eval=TRUE}
+```{r mixedmodels4, echo=TRUE, eval=TRUE, warning=FALSE}
 require(lmerTest)
 lmm.6 <- lmer(log(Time) ~ (type + LEAYRS + POST1 + PRE + AMSP + HRSD)^2 + (1 | List:Name) + (1 | List:type:Order), data = DLM)
 ft<-step(lmm.6)

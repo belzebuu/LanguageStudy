@@ -1,6 +1,6 @@
 ---
 title: 'Orientation: L1 vs L2'
-output: word_document
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
