@@ -49,14 +49,17 @@ glimpse(DLM)
 
 We consider the following independent variables:
 
-* `LEAYRS` a numerical variable with values ranging from 1 to 16. Learning in years.
+1. `LEAYRS` a numerical variable with values ranging from 1 to 16. Learning in years.
 
-* `POST1` a percentage scaled to lay between 0 and 10. It indicates the post test proficency. 
-* `PRE` a percentage scaled to lay between 0 and 10. It indicates the previous knowledge.
+2. `POST1` a percentage scaled to lay between 0 and 10. It indicates the post test proficency. 
+
+3. `PRE` a percentage scaled to lay between 0 and 10. It indicates the previous knowledge.
 <!--- `RPV`  a numerical variable with values ranging from 1 to 4.5.-->
 <!--- `AMGE`  a numerical variable with values ranging from 1 to 5.-->
-* `AMSP`  a numerical variable with values ranging from 1 to 5.
-* `HRSD`  a numerical variable with values ranging from 0 to 11.5. L2 use in hours per day.
+
+4. `AMSP`  a numerical variable with values ranging from 1 to 5.
+
+5. `HRSD`  a numerical variable with values ranging from 0 to 11.5. L2 use in hours per day.
 
 We rescaled some of these variables to be on similar scales. We treat these as fixed factors under study. In addition we have the random factors described earlier. The same modelling set up applies here. 
 
