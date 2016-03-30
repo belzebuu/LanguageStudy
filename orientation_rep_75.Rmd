@@ -1,6 +1,11 @@
 ---
 title: 'Orientation: 75% POST1 FILTERED L2'
-output: html_document
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
 ---
 
 ```{r setup, include=FALSE}
