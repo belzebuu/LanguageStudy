@@ -62,7 +62,7 @@ Our base model is the following
 
 ```{r basicmodel}
 lmm <- lmer(log(Time) ~  type + LEAYRS + LEA + AMSP + HRSD + (1 | List:Name) + (1 | List:type:Order), data = DLM, REML=FALSE)
-summary(lmm)
+#summary(lmm)
 ```
 
 We use a  manual, step-forward procedure with likelihood ratio test to see which of the fixed effects are significant.
@@ -98,6 +98,8 @@ require(lmerTest)
 lmm.6 <- lmer(log(Time) ~ (type + LEAYRS + LEA + AMSP + HRSD)^2 + (1 | List:Name) + (1 | List:type:Order), data = DLM)
 ft<-step(lmm.6)
 ft
+summary(ft$model)
+lmm<-ft$model
 ```
 
 
@@ -121,7 +123,7 @@ randeff.plot2(lmm)
 
 ```{r fixedeff, height=4, width=6, echo=FALSE}
 require(effects)
-plot(effects::Effect(c("AMSP","type"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
+plot(effects::Effect(c("AMSP"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
 #require(merTools)
 #plotFEsim(FEsim(lmm, n.sims = 100), level = 0.9, stat = 'median', intercept = FALSE)
 ```
@@ -131,7 +133,6 @@ plot(effects::Effect(c("AMSP","type"), lmm, transformation=list(link=log, invers
 ## Diagnostic plots
 
 ```{r plotlmr, fig.height=8}
-lmm<- lmer(log(Time) ~ (type + HRSD + LEAYRS + AMSP) + (1 | Name)+ (1 | type:List:Order), data = DLM)
 par(mfrow=c(3,2))
 # plot(lm4,which=1:4)
 
@@ -142,7 +143,8 @@ res <- residuals(lmm, type = "response")
 qqnorm(res, main = "Conditional residuals, QQplot")
 qqline(res)
 
-lm.0 <- lm(log(Time) ~ (type + HRSD + LEAYRS + AMSP), data = DLM)
+#lm.0 <- lm(log(Time) ~ (type + HRSD + LEAYRS + AMSP), data = DLM)
+lm.0 <- lm(log(Time) ~ (AMSP), data = DLM)
 x <- model.matrix(lm.0)
 pred <- x %*% fixef(lmm)
 res <- DLM$Time - pred

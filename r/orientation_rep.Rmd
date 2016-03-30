@@ -68,7 +68,7 @@ Our base model is the following
 
 ```{r basicmodel}
 lmm <- lmer(log(Time) ~  type + LEAYRS + (PRE + POST1)^2 + AMSP + HRSD + (1 | List:Name) + (1 | List:type:Order), data = DLM, REML=FALSE)
-summary(lmm)
+#summary(lmm)
 ```
 
 We use a  manual, step-forward procedure with likelihood ratio test to see which of the fixed effects are significant.
@@ -113,6 +113,8 @@ require(lmerTest)
 lmm.6 <- lmer(log(Time) ~ (type + LEAYRS + POST1 + PRE + AMSP + HRSD)^2 + (1 | List:Name) + (1 | List:type:Order), data = DLM)
 ft<-step(lmm.6)
 ft
+summary(ft$model)
+lmm<-ft$model
 ```
 
 
@@ -136,6 +138,8 @@ randeff.plot2(lmm)
 #require(merTools)
 #plotFEsim(FEsim(lmm, n.sims = 100), level = 0.9, stat = 'median', intercept = FALSE)
 require(effects)
+plot(effects::Effect(c("POST1"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black"))
+plot(effects::Effect(c("PRE"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
 plot(effects::Effect(c("LEAYRS"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",xlab="LEAYRS",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
 plot(effects::Effect(c("PRE","POST1"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
 hist(DLM$POST1)
@@ -159,7 +163,8 @@ res <- residuals(lmm, type = "response")
 qqnorm(res, main = "Conditional residuals, QQplot")
 qqline(res)
 
-lm.0 <- lm(log(Time) ~ ( type + LEAYRS + (POST1 + PRE)^2 + AMSP + HRSD), data = DLM)
+#lm.0 <- lm(log(Time) ~ ( type + LEAYRS + (POST1 + PRE)^2 + AMSP + HRSD), data = DLM)
+lm.0 <- lm(log(Time) ~ (LEAYRS + POST1 + PRE + POST1*PRE),data=DLM)
 x <- model.matrix(lm.0)
 pred <- x %*% fixef(lmm)
 res <- DLM$Time - pred
