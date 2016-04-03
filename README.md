@@ -8,6 +8,7 @@ native or second language". Dietha Koster et al.
 
 
 
+- [Exploratory data analysis](http://htmlpreview.github.io/?https://github.com/belzebuu/LanguageStudy/blob/master/html/glimpse.html)
 
 - [orientation L1 vs L2](http://htmlpreview.github.io/?https://github.com/belzebuu/LanguageStudy/blob/master/html/orientation_rep_L1vsL2.html)
 

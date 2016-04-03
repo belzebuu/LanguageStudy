@@ -9,7 +9,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE,dev='jpeg')
 options(formatR.arrow=TRUE, width=68, digits=5,show.signif.stars = TRUE)
 library(ggplot2)
 library(party)

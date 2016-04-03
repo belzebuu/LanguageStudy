@@ -9,7 +9,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, dev='jpeg')
 options(formatR.arrow=TRUE, width=68, digits=5,show.signif.stars = TRUE)
 library(ggplot2)
 library(party)
@@ -44,6 +44,7 @@ After removal of entries with missing data due to wrong answers, we have `r nlev
 # tbl_df(DLM)
 glimpse(DLM)
 ```
+
 
 <!--We removed the subjects that had `POST1` or `POST2` smaller than 75%. -->
 
@@ -138,10 +139,26 @@ randeff.plot2(lmm)
 #require(merTools)
 #plotFEsim(FEsim(lmm, n.sims = 100), level = 0.9, stat = 'median', intercept = FALSE)
 require(effects)
-plot(effects::Effect(c("POST1"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black"))
-plot(effects::Effect(c("PRE"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
-plot(effects::Effect(c("LEAYRS"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",xlab="LEAYRS",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
-plot(effects::Effect(c("PRE","POST1"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
+
+plot(effects::Effect(c("POST1"), lmm, transformation=list(link=log, inverse=exp)),
+     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",xlab="POST1",main="", 
+     bg="grey50",fg="black", alternating=FALSE,
+     par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black"))
+
+plot(effects::Effect(c("PRE"), lmm, transformation=list(link=log, inverse=exp)),
+     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",main="", 
+     bg="grey50",fg="black",alternating=FALSE,
+     par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
+
+plot(effects::Effect(c("LEAYRS"), lmm, transformation=list(link=log, inverse=exp)),
+     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",xlab="Proficiency",main="",
+     bg="grey50",fg="black",alternating=FALSE,
+     par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
+
+plot(effects::Effect(c("PRE","POST1"), lmm, transformation=list(link=log, inverse=exp)),
+     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",main="", bg="grey50",fg="black",alternating=FALSE,
+     par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
+
 hist(DLM$POST1)
 ```
 
