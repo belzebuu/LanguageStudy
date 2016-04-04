@@ -1,0 +1,75 @@
+---
+title: "glimpse.Rd"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(formatR.arrow=TRUE, width=68, digits=5,show.signif.stars = TRUE)
+library(ggplot2)
+#library(party)
+library(dplyr)
+#library(lme4)
+#library(lmerTest)
+#library(lmtest)
+#library(stringr)
+#library(merTools)
+#library(latticeExtra)
+library(GGally)
+```
+
+## Exploratory Data Analysis
+
+We join the L2 data sets.
+
+```{r dataoverview, eval=TRUE, echo=TRUE, warning=FALSE}
+load("orientation.RData")
+load("size.RData")
+```
+
+
+```{r dataoverview2, eval=TRUE, echo=TRUE, warning=FALSE}
+summary(select(Orientation,PRE,POST1,LEAYRS,HRSD,AMSP,Time))
+summary(select(Size,PRE,POST1,LEAYRS,HRSD,AMSP,Time))
+
+Orientation %>% select(-Name,-List,-type,-Order) %>% summarize_each(funs(mean, "mean", mean(., na.rm = TRUE)))
+Orientation %>% select(-Name,-List,-type,-Order) %>% summarize_each(funs(sd, "sd", sd(., na.rm = TRUE)))
+
+Size %>% select(-Name,-List,-type,-Order) %>% summarize_each(funs(mean, "mean", mean(., na.rm = TRUE)))
+Size %>% select(-Name,-List,-type,-Order) %>% summarize_each(funs(sd, "sd", sd(., na.rm = TRUE)))
+#plot(select(DLM,PRE,POST1,LEAYRS,HRSD,AMSP,Time))
+#require(tabplot)
+#tableplot(select(DLM,PRE,POST1,LEAYRS,HRSD,AMSP,Time))
+```
+
+We plot a generalized pairs plot, that is a scatter plot for every pair of variables in our data. The comparison for  factors between the data in the orientation and size case can be seen in the last column, in the last row and in the diagonal. The other plots, outisde of the diagonal show the correlation between pairs of factors. We see that we have more data for the Orientation case and that the distribution of values for the PRE and HRSD variables are quiteœ different. Reference:
+
+@Article{gpp,
+  author = {John W Emerson and Walton A Green and Barret Schloerke and Jason Crowley and Dianne Cook and Heike Hofmann and Hadley Wickham},
+  journal = {Journal of Computational and Graphical Statistics},
+  number = {1},
+  pages = {79–91},
+  publisher = {Taylor \& Francis Group},
+  title = {The Generalized Pairs Plot},
+  url = {http://www.tandfonline.com/doi/ref/10.1080/10618600.2012.694762},
+  volume = {22},
+  year = {2012},
+}
+
+```{r dataoverview3, eval=TRUE, echo=FALSE, fig.height=10, fig.width=10, warning=FALSE}
+DF<-rbind(data.frame(Orientation,case="Orientation"),data.frame(Size,case="Size"))
+#ggscatmat(select(DF,PRE,POST1,LEAYRS,HRSD,AMSP,Time,case),
+#        columns=c("PRE","POST1","LEAYRS","HRSD","AMSP","Time"),
+#                    #columns = 2:4, 
+#          color="case", alpha=0.8)
+ggpairs(select(DF,PRE,POST1,LEAYRS,HRSD,AMSP,Time,case),aes(color=case),
+        columns=c("PRE","POST1","LEAYRS","HRSD","AMSP","Time","case"),
+         scatter.pars=list(pch=19)
+#        lower = list(
+#      continuous = wrap("dot",alpha=0.8,size=2),
+#    combo = "facetdensity"
+    #mapping = aes(color = case)
+#    )
+        )
+```
+
