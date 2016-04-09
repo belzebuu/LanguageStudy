@@ -8,6 +8,17 @@ output:
       smooth_scroll: false
 ---
 
+<!--
+Name -> Subject
+type -> Type
+Order
+LEAYRS + 
+POST1 <- POST
+PRE + 
+AMSP <- ML2 
+HRSD
+-->
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, dev='jpeg')
 options(formatR.arrow=TRUE, width=68, digits=5,show.signif.stars = TRUE)
@@ -111,8 +122,8 @@ An automatic, step-backward procedure from the package lmerTest starting from a 
 
 ```{r mixedmodels4, echo=TRUE, eval=TRUE, warning=FALSE}
 require(lmerTest)
-lmm.6 <- lmer(log(Time) ~ (type + LEAYRS + POST1 + PRE + AMSP + HRSD)^2 + (1 | List:Name) + (1 | List:type:Order), data = DLM)
-ft<-step(lmm.6)
+lmm.6 <- lmer(log(Time) ~ (type + LEAYRS + POST1 + PRE + AMSP + HRSD)^2 + (1|List) + (1 | List:Name) + (1 | List:type:Order), data = DLM)
+ft<-step(lmm.6, lsmeans.calc = TRUE)
 ft
 summary(ft$model)
 lmm<-ft$model
