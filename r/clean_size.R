@@ -1,6 +1,6 @@
 library(dplyr)
 
-D0<-read.csv("data/factors_size.csv",na.strings="Err:512",sep=";",dec=".",header=TRUE)
+D0<-read.csv("../data/factors_size.csv",na.strings="Err:512",sep=";",dec=".",header=TRUE)
 #D0<-na.omit(D0)
 #D<-rbind(data.frame(D0[1:23],time=D0[,24],type="MATCH"),data.frame(D0[1:23],time=D0[,25],type="MISMATCH"))
 ##D1<-D0 %>% select(Name,CoR,Hand,EO,List,CEF,SRRC,PRE,POST1,POST2,STAY,LEAYRS,HRSD,RPV,AMGE,AMSP)#,time,type) 

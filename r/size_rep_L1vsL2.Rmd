@@ -155,3 +155,19 @@ The joint qqplot looks normal. The marginal looks less nice.
 
 
 
+
+
+## Tables with p-values (Satterwhite approximation)
+
+It could be possible to include a syntetic ANOVA table like this:
+
+```{r anova, message=FALSE, warning=FALSE}
+require(lmerTest)
+lmm<- lmer(log(Time) ~ type + Lang + (1 | List:Name)+ (1 | List:type:Order), data = DLM, REML=FALSE)
+anova(lmm)
+```
+however, as explained above it is controversial.
+It is also possible to have t-test and p-values like this:
+```{r sum}
+summary(lmm)
+```
