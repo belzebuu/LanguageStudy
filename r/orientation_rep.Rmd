@@ -11,7 +11,7 @@ output:
 <!--
 Name -> Subject
 type -> Type
-Order
+Order -> Trial
 LEAYRS + 
 POST1 <- POST
 PRE + 
@@ -39,16 +39,18 @@ We load the data and remove the cases with NA values.
 ```{r data, echo=FALSE}
 load("orientation.RData")
 DLM<-Orientation
+num<-DLM %>% group_by(List) %>% summarize(n_distinct(Name))
 ```
 
-We have `r nlevels(DLM$Name)` subjects for a total of `r dim(DLM)[1]` observations. 
+We have `r nlevels(DLM$Name)` subjects for a total of `r dim(DLM)[1]` observations. There are `r as.numeric(num[1,2])` subjects in list A and  `r as.numeric(num[2,2])` in list B.
 
 ```{r naomit, echo=FALSE}
 DLM<-na.omit(DLM)
 DLM$Name<-factor(DLM$Name)
+num<-DLM %>% group_by(List) %>% summarize(n_distinct(Name))
 ```
 
-After removal of entries with missing data due to wrong answers, we have `r nlevels(DLM$Name)` subjects and `r dim(DLM)[1]` observations left.
+After removal of entries with missing data due to wrong answers, we have `r nlevels(DLM$Name)` subjects and `r dim(DLM)[1]` observations left. There are `r as.numeric(num[1,2])` subjects in list A and  `r as.numeric(num[2,2])` in list B.
 
 ```{r dataoverview, eval=FALSE, echo=FALSE}
 # Let's have a glimpse at the data:

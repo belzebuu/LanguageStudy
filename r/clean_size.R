@@ -21,13 +21,18 @@ D1<-D1 %>% mutate(PRE=PRE*10) %>% mutate(POST1=POST1*10) %>% mutate(POST2=POST2*
 #D1$RPV<-factor(D1$RPV,levels=c(1:5),ordered=TRUE)
 #i <- which(rownames(D1)=="1071")
 #D1<-D1[-i,]
+Lists<-read.csv("../data/L2SpanishLists.csv",na.strings="Err:512",sep=";",header=FALSE)
+levels(Lists$V2)<-c(0,1)
+names(Lists)<-c("Name","List")
+D1<-full_join(D1,Lists,by="Name") %>% mutate(List=ifelse(is.na(List.y),as.character(List.x),as.character(List.y)))
+D1$List<-factor(D1$List)
 
-L0 <- read.csv("data/L2SpanishMatch.csv",na.strings="Err:512",sep=";",header=FALSE)
+L0 <- read.csv("../data/L2SpanishMatch.csv",na.strings="Err:512",sep=";",header=FALSE)
 L1 <- reshape(L0,direction="long",varying=list(2:9),idvar="id",ids=1:NROW(L0),times=1:8,timevar = "order")
 names(L1)<-c("Name","Order","Time","ID")
 DM<-right_join(D1,L1,by="Name")
 
-L0 <- read.csv("data/L2SpanishMisMatch.csv",na.strings="Err:512",sep=";",header=FALSE)
+L0 <- read.csv("../data/L2SpanishMisMatch.csv",na.strings="Err:512",sep=";",header=FALSE)
 L1 <- reshape(L0,direction="long",varying=list(2:9),times=1:8,timevar = "order")
 names(L1)<-c("Name","Order","Time","ID")
 DMM<-right_join(D1,L1,by="Name")
@@ -49,16 +54,16 @@ Size <- D0
 
 
 ##################################################################################################
-Lists<-read.csv("data/L1SpanishLists.csv",na.strings="Err:512",sep=";",header=FALSE)
+Lists<-read.csv("../data/L1SpanishLists.csv",na.strings="Err:512",sep=";",header=FALSE)
 levels(Lists$V2)<-c(0,1)
 names(Lists)<-c("Name","List")
 
-L0 <- read.csv("data/L1SpanishMatch.csv",na.strings="Err:512",sep=";",header=FALSE)
+L0 <- read.csv("../data/L1SpanishMatch.csv",na.strings="Err:512",sep=";",header=FALSE)
 L1 <- reshape(L0,direction="long",varying=list(2:9),idvar="id",ids=1:NROW(L0),times=1:8,timevar = "order")
 names(L1)<-c("Name","Order","Time","ID")
 DM<-right_join(Lists,L1,by="Name")
 
-L0 <- read.csv("data/L1SpanishMisMatch.csv",na.strings="Err:512",sep=";",header=FALSE)
+L0 <- read.csv("../data/L1SpanishMisMatch.csv",na.strings="Err:512",sep=";",header=FALSE)
 L1 <- reshape(L0,direction="long",varying=list(2:9),times=1:8,timevar = "order")
 names(L1)<-c("Name","Order","Time","ID")
 DMM<-right_join(Lists,L1,by="Name")

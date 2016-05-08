@@ -29,15 +29,27 @@ We load the data and remove the cases with NA values.
 ```{r data, echo=FALSE}
 load("size.RData")
 DLM<-Size
+num<-DLM %>% group_by(List) %>% summarize(n_distinct(Name))
 ```
 
-We have `r nlevels(DLM$Name)` subjects for a total of `r dim(DLM)[1]` observations. 
+We have `r nlevels(DLM$Name)` subjects for a total of `r dim(DLM)[1]` observations.  The subjects are distributed between the lists as follows: 
+
+
+```{r echo=FALSE, results=TRUE}
+print(num)
+```
 
 ```{r naomit, echo=FALSE}
 DLM<-na.omit(DLM)
 DLM$Name<-factor(DLM$Name)
+num<-DLM %>% group_by(List) %>% summarize(n_distinct(Name))
 ```
-After removal of entries with missing data due to wrong answers, we have `r nlevels(DLM$Name)` subjects and `r dim(DLM)[1]` observations left.
+After removal of entries with missing data due to wrong answers, we have `r nlevels(DLM$Name)` subjects and `r dim(DLM)[1]` observations left.  The subjects are distributed between the lists as follows: 
+
+
+```{r echo=FALSE, results=TRUE}
+print(num)
+```
 
 ```{r dataoverview, eval=FALSE, echo=FALSE}
 # Let's have a glimpse at the data:

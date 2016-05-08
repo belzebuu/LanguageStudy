@@ -28,18 +28,27 @@ library(latticeExtra)
 load("orientation.RData")
 DLM<-OrientationL1L2
 
-num <- DLM %>% group_by(Lang) %>% summarize(length(unique(Name)))
+num<-DLM %>% group_by(Lang,List) %>% summarize(n_distinct(Name))
 ```
 
-We have `r as.numeric(num[2,2])` subjects for L1 and `r as.numeric(num[1,2])` for L2 for a total of  `r dim(DLM)[1]` observations.
+We have `r sum(num[,3])` subjects in total and `r dim(DLM)[1]` observations. The subjects are distributed as follows:
+
+```{r echo=FALSE, results=TRUE}
+print(num)
+```
 
 ```{r naomit, echo=FALSE}
 DLM<-na.omit(DLM)
 DLM$Name<-factor(DLM$Name)
-num <- DLM %>% group_by(Lang) %>% summarize(length(unique(Name)))
+num<-DLM %>% group_by(Lang,List) %>% summarize(n_distinct(Name))
 ```
 
-After removal of entries with missing data due to wrong answers, we have `r as.numeric(num[2,2])` subjects for L1 and `r as.numeric(num[1,2])` subjects for L2 for a total of `r dim(DLM)[1]` observations left.
+After removal of entries with missing data due to wrong answers, we have `r sum(num[,3])` subjects in total and `r dim(DLM)[1]` observations left. The subjects are distributed as follows:
+
+
+```{r echo=FALSE, results=TRUE}
+print(num)
+```
 
 ```{r dataoverview, eval=FALSE, echo=FALSE}
 # Let's have a glimpse at the data:
