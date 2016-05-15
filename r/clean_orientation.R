@@ -25,7 +25,7 @@ levels(Lists$V2)<-c(0,1)
 names(Lists)<-c("Name","List")
 D1<-full_join(D1,Lists,by="Name") %>% mutate(List=ifelse(is.na(List.y),as.character(List.x),as.character(List.y)))
 D1$List<-factor(D1$List)
-
+D1<-D1 %>% select(-List.x,-List.y)
 
 
 L0 <- read.csv("../data/L2GermanMatch.csv",na.strings="Err:512",sep=";",header=FALSE)
