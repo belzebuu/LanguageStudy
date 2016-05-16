@@ -4,7 +4,9 @@ D0<-read.csv("../data/factors_size.csv",na.strings="Err:512",sep=";",dec=".",hea
 #D0<-na.omit(D0)
 #D<-rbind(data.frame(D0[1:23],time=D0[,24],type="MATCH"),data.frame(D0[1:23],time=D0[,25],type="MISMATCH"))
 ##D1<-D0 %>% select(Name,CoR,Hand,EO,List,CEF,SRRC,PRE,POST1,POST2,STAY,LEAYRS,HRSD,RPV,AMGE,AMSP)#,time,type) 
+# Student           Name Exp CoR Age Gender Hand EO List CEF SRRC    SRP  PRE POST1 POST2 POST12 A0A STAY LEAYRS  HRSD KNV RPV   AMSP AMGE
 D1<-D0 %>% select(Name,List,PRE,POST1,POST2,LEAYRS,HRSD,AMSP)#,time,type) 
+
 # %>% transmute(LanguageAge=Age-AoA)
 # D2<-D1[,c("Hand")] %>% mutate_each(funs(factor))
 #D1$Hand<-factor(D1$Hand)
@@ -85,6 +87,11 @@ source("lib.R")
 levels(Size$Name)<-anonymize.wrap(levels(Size$Name))
 levels(SizeL1L2$Name)<-anonymize.wrap(levels(SizeL1L2$Name))
 
+Size<-Size %>% select(-POST2,-LEA,-ID)
+names(Size)<-c("Subject","Pre","Post","LeaYrs","DUH","AECI","List","Trial","Time","Type")
+
+SizeL1L2<-SizeL1L2 %>% select(-ID)
+names(SizeL1L2)<-c("Subject","List","Trial","Time","Type","Lang")
 
 save(Size,SizeL1L2,file="size.RData")
 

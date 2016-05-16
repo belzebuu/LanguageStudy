@@ -84,6 +84,12 @@ levels(Orientation$Name)<-anonymize.wrap(levels(Orientation$Name))
 levels(OrientationL1L2$Name)<-anonymize.wrap(levels(OrientationL1L2$Name))
 
 
+Orientation<-Orientation %>% select(-POST2,-LEA,-ID)
+names(Orientation)<-c("Subject","Pre","Post","LeaYrs","DUH","AECI","List","Trial","Time","Type")
+
+OrientationL1L2<-OrientationL1L2 %>% select(-ID)
+names(OrientationL1L2)<-c("Subject","List","Trial","Time","Type","Lang")
+
 save(Orientation,OrientationL1L2,file="orientation.RData")
 
 

@@ -1,7 +1,7 @@
 
 ```{r plots, echo=FALSE}
-q<-ggplot(data=DLM, aes(y=Time, x=Order, color=Lang))
-q<-q+facet_wrap(~type+List,ncol=2,drop=TRUE)
+q<-ggplot(data=DLM, aes(y=Time, x=Trial, color=Lang))
+q<-q+facet_wrap(~Type+List,ncol=2,drop=TRUE)
 q<-q+geom_jitter(width = 0.4, height = 0.0)
 #q<-q+geom_smooth(method=lm,se=FALSE)
 q<-q+theme(legend.position="top") 
@@ -11,10 +11,10 @@ print(q)
 
 
 ```{r plots, echo=FALSE}
-DLM$Name <- factor(str_trim(DLM$Name))
-ss <- sample(levels(DLM$Name), 15)
-q<-ggplot(data=subset(DLM,Name %in% ss), aes(y=Time, x=Order, color=type))
-q<-q+facet_wrap(~Name,ncol=5,drop=TRUE)
+DLM$Subject <- factor(str_trim(DLM$Subject))
+ss <- sample(levels(DLM$Subject), 15)
+q<-ggplot(data=subset(DLM,Subject %in% ss), aes(y=Time, x=Trial, color=Type))
+q<-q+facet_wrap(~Subject,ncol=5,drop=TRUE)
 q<-q+geom_point()
 #q<-q+geom_smooth(method=lm,se=FALSE)
 q<-q+theme(legend.position="top") 
@@ -24,19 +24,19 @@ print(q)
 
 ```{r mixedmodels1, warning=FALSE}
 lm.0 <- lm(log(Time) ~ 1, data = DLM)
-# LEAYRS AMSP AMGE
-lmm.0 <- lmer(log(Time) ~ (1 | List:Name)+ (1 | List:type:Order), data = DLM)
+# LeaYrs AECI AMGE
+lmm.0 <- lmer(log(Time) ~ (1 | List:Subject)+ (1 | List:Type:Trial), data = DLM)
 AIC(lm.0,lmm.0)
 ```
 
 <!--
   ## Regression tree
   
-  Another type of analysis by means of regression tree:
+  Another Type of analysis by means of regression tree:
   
   ```{r regtree, eval=FALSE, echo=FALSE}
-## ct <- ctree(data=D2,Time~ type + CoR + Hand + EO + List + CEF + SRRC + PRE + POST1 + POST2 + STAY + LEAYRS + HRSD + RPV + AMGE + AMSP )
-ct <- ctree(data=DLM,log(Time)~ type + HRSD + RPV + AMGE + AMSP)
+## ct <- ctree(data=D2,Time~ Type + CoR + Hand + EO + List + CEF + SRRC + Pre + Post1 + Post2 + STAY + LeaYrs + DUH + RPV + AMGE + AECI )
+ct <- ctree(data=DLM,log(Time)~ Type + DUH + RPV + AMGE + AECI)
 ct
 plot(ct)
 ```
@@ -84,22 +84,22 @@ head(as.data.frame(boo01))
 ##   for larger bootstrap samples, e.g. nsim=500
 
 ## intercept
-(bCI.1 <- boot.ci(boo01, index=1, type=c("norm", "basic", "perc")))# beta
+(bCI.1 <- boot.ci(boo01, index=1, Type=c("norm", "basic", "perc")))# beta
 
 ## Residual standard deviation - original scale:
-(bCI.2  <- boot.ci(boo01, index=2, type=c("norm", "basic", "perc")))
+(bCI.2  <- boot.ci(boo01, index=2, Type=c("norm", "basic", "perc")))
 ## Residual SD - transform to log scale:
-#(bCI.2L <- boot.ci(boo01, index=2, type=c("norm", "basic", "perc"),
+#(bCI.2L <- boot.ci(boo01, index=2, Type=c("norm", "basic", "perc"),
 #                   h = log, hdot = function(.) 1/., hinv = exp))
 
 ## Among-batch variance:
-(bCI.3 <- boot.ci(boo01, index=3, type=c("norm", "basic", "perc"))) # sig01
+(bCI.3 <- boot.ci(boo01, index=3, Type=c("norm", "basic", "perc"))) # sig01
 
 ## Extract all CIs (somewhat awkward)
-bCI.tab <- function(b,ind=length(b$t0), type="perc", conf=0.95) {
+bCI.tab <- function(b,ind=length(b$t0), Type="perc", conf=0.95) {
   btab0 <- t(sapply(as.list(seq(ind)),
                     function(i)
-                      boot.ci(b,index=i,conf=conf, type=type)$percent))
+                      boot.ci(b,index=i,conf=conf, Type=Type)$percent))
   btab <- btab0[,4:5]
   rownames(btab) <- names(b$t0)
   a <- (1 - conf)/2

@@ -29,7 +29,7 @@ library(latticeExtra)
 load("size.RData")
 DLM<-SizeL1L2
 
-num<-DLM %>% group_by(Lang,List) %>% summarize(n_distinct(Name))
+num<-DLM %>% group_by(Lang,List) %>% summarize(n_distinct(Subject))
 ```
 
 We have `r as.numeric(num[2,2])` subjects for L1 and `r as.numeric(num[1,2])` for L2 for a total of  `r dim(DLM)[1]` observations. The subjects are distributed as follows:
@@ -40,8 +40,8 @@ print(num)
 
 ```{r naomit, echo=FALSE}
 DLM<-na.omit(DLM)
-DLM$Name<-factor(DLM$Name)
-num<-DLM %>% group_by(Lang,List) %>% summarize(n_distinct(Name))
+DLM$Subject<-factor(DLM$Subject)
+num<-DLM %>% group_by(Lang,List) %>% summarize(n_distinct(Subject))
 ```
 
 After removal of entries with missing data due to wrong answers, we have `r as.numeric(num[2,2])` subjects for L1 and `r as.numeric(num[1,2])` subjects for L2 for a total of `r dim(DLM)[1]` observations left. The subjects are distributed as follows:
@@ -60,38 +60,38 @@ glimpse(DLM)
 The situation is the same as in the Orientation L1 vs L2 case.
 
 Our starting model is: 
-`lmer(log(Time) ~ type + Lang + (1 | List:Name) + (1 | List:type:Order), data = DLM)`
-In this case, a likelihood ratio test gives as significant also the `type`. The second order interactions are still not significant. The random effects are significant. This is also supported by the portion of standard deviation of the residuals that is imputable to the two random effects. 
+`lmer(log(Time) ~ Type + Lang + (1 | List:Subject) + (1 | List:Type:Trial), data = DLM)`
+In this case, a likelihood ratio test gives as significant also the `Type`. The second order interactions are still not significant. The random effects are significant. This is also supported by the portion of standard deviation of the residuals that is imputable to the two random effects. 
 
 ```{r basicmodel, warning=TRUE}
-lmm<- lmer(log(Time) ~ type + Lang + (1 | List:Name)+ (1 | List:type:Order), data = DLM, REML=FALSE)
+lmm<- lmer(log(Time) ~ Type + Lang + (1 | List:Subject)+ (1 | List:Type:Trial), data = DLM, REML=FALSE)
 summary(lmm)
 ```
 
 
 ```{r mixedmodels1, warning=FALSE, eval=FALSE, echo=FALSE}
 lm.0 <- lm(log(Time) ~ 1, data = DLM)
-# LEAYRS AMSP AMGE
-lmm.0 <- lmer(log(Time) ~ (1 | List:Name)+ (1 | List:Name:Order), data = DLM)
+# LeaYrs AECI AMGE
+lmm.0 <- lmer(log(Time) ~ (1 | List:Subject)+ (1 | List:Subject:Trial), data = DLM)
 AIC(lm.0,lmm.0)
 ```
 
 
 ```{r mixedmodels2, warning=FALSE}
-lmm.0 <- lmer(log(Time) ~ (1 | List:Name)+ (1 | List:type:Order), data = DLM)
-lmm.1 <- update(lmm.0, .~. + type)
+lmm.0 <- lmer(log(Time) ~ (1 | List:Subject)+ (1 | List:Type:Trial), data = DLM)
+lmm.1 <- update(lmm.0, .~. + Type)
 anova(lmm.0,lmm.1)
 
 lmm.2 <- update(lmm.0, .~. + Lang)
 anova(lmm.1,lmm.2)
 
-lmm.3 <- update(lmm, .~. + (type+Lang)^2)
+lmm.3 <- update(lmm, .~. + (Type+Lang)^2)
 anova(lmm,lmm.3)
 
-lmm.4 <- update(lmm,.~.-(1 | List:Name))
+lmm.4 <- update(lmm,.~.-(1 | List:Subject))
 anova(lmm.4,lmm)
 
-lmm.5 <- update(lmm,.~.-(1 | List:type:Order))
+lmm.5 <- update(lmm,.~.-(1 | List:Type:Trial))
 anova(lmm.5,lmm)
 ```
 
@@ -102,8 +102,8 @@ We can conclude that L1 speakers have shorter reaction times than L2 speakers un
 ```{r randomeff, height=6, width=4, echo=FALSE}
 #plotREsim(REsim(lmm, n.sims = 100), stat = 'median', sd = TRUE)
 source("lib.R")
-#randeff.plot(lmm,"Name")
-#randeff.plot(lmm,"type:List:Order")
+#randeff.plot(lmm,"Subject")
+#randeff.plot(lmm,"Type:List:Trial")
 randeff.plot2(lmm)
 ```
 
@@ -113,8 +113,8 @@ randeff.plot2(lmm)
 
 
 ```{r fixedplot, height=4, width=5, echo=FALSE}
-plot(effects::Effect(c("Lang", "type"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",xlab="Speakers",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
-#plot(effects::Effect(c("type", "Lang"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",xlab="Speakers",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
+plot(effects::Effect(c("Lang", "Type"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",xlab="Speakers",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
+#plot(effects::Effect(c("Type", "Lang"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",xlab="Speakers",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
 ```
 
 
@@ -128,18 +128,18 @@ plotFEsim(FEsim(lmm, n.sims = 100), level = 0.9, stat = 'median', intercept = FA
 ## Diagnostic plots
 
 ```{r plotlmr, fig.height=8}
-#lmm<- glmer(Time ~ Lang + type + (1 | Name)+ (1 | type:List:Order), data = DLM,family=Gamma(link = "identity"))
+#lmm<- glmer(Time ~ Lang + Type + (1 | Subject)+ (1 | Type:List:Trial), data = DLM,family=Gamma(link = "identity"))
 par(mfrow=c(2,2))
 # plot(lm4,which=1:4)
 
-plot(fitted(lmm, type = "response"), residuals(lmm, type = "response"),
+plot(fitted(lmm, Type = "response"), residuals(lmm, Type = "response"),
      main = "Conditional residuals", xlab = "Predicted", ylab = "Residuals")
 
-res <- residuals(lmm, type = "response")
+res <- residuals(lmm, Type = "response")
 qqnorm(res, main = "Conditional residuals, QQplot")
 qqline(res)
 
-lm.0 <- lm(log(Time) ~ type + Lang, data = DLM)
+lm.0 <- lm(log(Time) ~ Type + Lang, data = DLM)
 x <- model.matrix(lm.0)
 pred <- x %*% fixef(lmm)
 res <- DLM$Time - pred
@@ -150,8 +150,8 @@ qqline(res)
 ```
 
 ```{r plot1, fig.width=3, echo=FALSE, eval=FALSE}
-plot(lmm,type=c("p","smooth"))
-plot(lmm,sqrt(abs(resid(.))) ~ fitted(.), type=c("p","smooth"))
+plot(lmm,Type=c("p","smooth"))
+plot(lmm,sqrt(abs(resid(.))) ~ fitted(.), Type=c("p","smooth"))
 qqmath(lmm,id=0.005)
 # package HLMdiag influence.ME
 ```
@@ -171,7 +171,7 @@ It could be possible to include a syntetic ANOVA table like this:
 
 ```{r anova, message=FALSE, warning=FALSE}
 require(lmerTest)
-lmm<- lmer(log(Time) ~ type + Lang + (1 | List:Name)+ (1 | List:type:Order), data = DLM, REML=FALSE)
+lmm<- lmer(log(Time) ~ Type + Lang + (1 | List:Subject)+ (1 | List:Type:Trial), data = DLM, REML=FALSE)
 anova(lmm)
 ```
 however, as explained above it is controversial.

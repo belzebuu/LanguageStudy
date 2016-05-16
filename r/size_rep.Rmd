@@ -10,7 +10,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE,dev='jpeg')
-options(formatR.arrow=TRUE, width=68, digits=5,show.signif.stars = TRUE)
+options(formatR.arrow=TRUE, width=100, digits=5,show.signif.stars = TRUE)
 library(ggplot2)
 library(party)
 library(dplyr)
@@ -29,10 +29,10 @@ We load the data and remove the cases with NA values.
 ```{r data, echo=FALSE}
 load("size.RData")
 DLM<-Size
-num<-DLM %>% group_by(List) %>% summarize(n_distinct(Name))
+num<-DLM %>% group_by(List) %>% summarize(n_distinct(Subject))
 ```
 
-We have `r nlevels(DLM$Name)` subjects for a total of `r dim(DLM)[1]` observations.  The subjects are distributed between the lists as follows: 
+We have `r nlevels(DLM$Subject)` subjects for a total of `r dim(DLM)[1]` observations.  The subjects are distributed between the lists as follows: 
 
 
 ```{r echo=FALSE, results=TRUE}
@@ -41,10 +41,10 @@ print(num)
 
 ```{r naomit, echo=FALSE}
 DLM<-na.omit(DLM)
-DLM$Name<-factor(DLM$Name)
-num<-DLM %>% group_by(List) %>% summarize(n_distinct(Name))
+DLM$Subject<-factor(DLM$Subject)
+num<-DLM %>% group_by(List) %>% summarize(n_distinct(Subject))
 ```
-After removal of entries with missing data due to wrong answers, we have `r nlevels(DLM$Name)` subjects and `r dim(DLM)[1]` observations left.  The subjects are distributed between the lists as follows: 
+After removal of entries with missing data due to wrong answers, we have `r nlevels(DLM$Subject)` subjects and `r dim(DLM)[1]` observations left.  The subjects are distributed between the lists as follows: 
 
 
 ```{r echo=FALSE, results=TRUE}
@@ -59,21 +59,21 @@ glimpse(DLM)
 
 We consider the following independent variables:
 
-1. `LEAYRS` a numerical variable with values ranging from 1 to 16. Learning in years.
-2. `POST1` a percentage scaled to lay between 0 and 10. It indicates the post test proficency. 
-3. `PRE` a percentage scaled to lay between 0 and 10. It indicates the previous knowledge.
+1. `LeaYrs` a numerical variable with values ranging from 1 to 16. Learning in years.
+2. `Post` a percentage scaled to lay between 0 and 10. It indicates the post test proficency. 
+3. `Pre` a percentage scaled to lay between 0 and 10. It indicates the previous knowledge.
 <!--- `RPV`  a numerical variable with values ranging from 1 to 4.5.-->
 <!--- `AMGE`  a numerical variable with values ranging from 1 to 5.-->
-4. `AMSP`  a numerical variable with values ranging from 1 to 5.
-5. `HRSD`  a numerical variable with values ranging from 0 to 11.5. L2 use in hours per day.
+4. `AECI`  a numerical variable with values ranging from 1 to 5.
+5. `DUH`  a numerical variable with values ranging from 0 to 11.5. L2 use in hours per day.
 
 We rescaled some of these variables to be on similar scales. We treat these as fixed factors under study. In addition we have the random factors described earlier. The same modelling set up applies here.
 
 The basic model is: 
-`lmm <- lmer(log(Time) ~ type + LEAYRS + (PRE + POST1)^2 + AMSP + HRSD + POST1*HRSD +  (1 | List:Name) + (1 | List:type:Order), data = DLM)`
+`lmm <- lmer(log(Time) ~ Type + LeaYrs + (Pre + Post)^2 + AECI + DUH + Post*DUH +  (1 | List:Subject) + (1 | List:Type:Trial), data = DLM)`
 
 ```{r basicmodel}
-lmm <- lmer(log(Time) ~  type + LEAYRS + (PRE + POST1)^2 + AMSP + HRSD + POST1*HRSD + (1 | List:Name) + (1 | List:type:Order), data = DLM, REML=FALSE)
+lmm <- lmer(log(Time) ~  Type + LeaYrs + (Pre + Post)^2 + AECI + DUH + Post*DUH + (1 | List:Subject) + (1 | List:Type:Trial), data = DLM, REML=FALSE)
 #summary(lmm)
 ```
 
@@ -81,53 +81,67 @@ We use a  manual, step-forward procedure with likelihood ratio test to see which
 
 
 ```{r mixedmodels2, warning=TRUE}
-lmm.0 <- lmer(log(Time) ~  (1 | List:Name) + (1 | List:type:Order), data = DLM)
+lmm.0 <- lmer(log(Time) ~  (1 | List:Subject) + (1 | List:Type:Trial), data = DLM)
 
-lmm.1 <- update(lmm.0, .~. + type)
+lmm.1 <- update(lmm.0, .~. + Type)
 anova(lmm.0,lmm.1)
 
-lmm.2 <- update(lmm.0, .~.+LEAYRS)
+lmm.2 <- update(lmm.0, .~.+LeaYrs)
 anova(lmm.0,lmm.2)
 
-lmm.3 <- update(lmm.0, .~. + POST1) 
+lmm.3 <- update(lmm.0, .~. + Post) 
 anova(lmm.0,lmm.3)
 
-lmm.3 <- update(lmm.0, .~. + PRE) 
+lmm.3 <- update(lmm.0, .~. + Pre) 
 anova(lmm.0,lmm.3)
 
-lmm.3 <- update(lmm.0, .~. + POST1) 
+lmm.3 <- update(lmm.0, .~. + Post) 
 anova(lmm.0,lmm.3)
 
-lmm.3 <- update(lmm.0, .~. + PRE*POST1) 
+lmm.3 <- update(lmm.0, .~. + Pre*Post) 
 anova(lmm.0,lmm.3)
 
-lmm.4 <- update(lmm.0, .~. + AMSP)
+lmm.4 <- update(lmm.0, .~. + AECI)
 anova(lmm.0,lmm.4)
 
-lmm.5 <- update(lmm.0, .~. + HRSD)
+lmm.5 <- update(lmm.0, .~. + DUH)
 anova(lmm.0,lmm.5)
 ```
 
-We conclude that only `AMSP` has a significant effect at a 0.05 level while the type has a significant effect at a level of 0.1.
+We conclude that only `AECI` has a significant effect at a 0.05 level while the Type has a significant effect at a level of 0.1.
 
 
-An automatic, step-backward procedure from the package lmerTest starting from a model that includes all second order fixed factor intereactions lead to a different conclusion: the factors AMSP, POST1, HRSD and the interaction between these last two are significant.
+An automatic, step-backward procedure from the package lmerTest starting from a model that includes all second order fixed factor intereactions lead to a different conclusion: the factors AECI, Post, DUH and the interaction between these last two are significant.
 
 
 ```{r mixedmodels4, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
 require(lmerTest)
-lmm.6 <- lmer(log(Time) ~ (type + LEAYRS + POST1 + PRE + AMSP + HRSD)^2 + (1 | List:Name) + (1 | List:type:Order), data = DLM)
+lmm.6 <- lmer(log(Time) ~ (Type + LeaYrs + Post + Pre + AECI + DUH)^2 + (1 | List:Subject) + (1 | List:Type:Trial), data = DLM)
 ft<-step(lmm.6)
 ft
 summary(ft$model)
 lmm<-ft$model
 ```
 
-Finally, Analysis of Variance Table of type III  with  Satterthwaite 
+
+## Exhaustive search
+
+```{r dredge, echo=TRUE, eval=TRUE, warning=FALSE}
+lmm.6 <- lmer(log(Time) ~ (Type + List + LeaYrs + Post + Pre + AECI + DUH)+AECI*DUH+Post*Pre + (1 | List:Subject) + (1 | List:Type:Trial), data = DLM, na.action="na.fail",REML=FALSE)
+
+library(MuMIn)
+dredge.res<-dredge(lmm.6, beta = c("none"), evaluate = TRUE, rank = "AICc", fixed = NULL, m.lim = NULL,  trace = FALSE)
+print(dredge.res)
+attr(dredge.res, "model.calls")[1]
+```
+
+
+
+Finally, Analysis of Variance Table of Type III  with  Satterthwaite 
 approximation for degrees of freedom gives produces yet another different analysis. It is reported at the end of this document.
 
 
-All three analysis indicate however that  `AMSP`  is significant. 
+All three analysis indicate however that  `AECI`  is significant. 
 
 
 ```{r confintstd, eval=FALSE, echo=FALSE}
@@ -136,7 +150,7 @@ confint(lmm,method="boot")
 ```
 
 
-The figures show random  and the fixed effects. Again the subject effects are significant. We back transformed the fixed effects in linear scale and added 0.95-confidence level bands. It is evident the reduction in reaction time as `AMSP` increases. The `HRSD` values do not seem to have a considerable impact while `PRE` and `POST1` interactions are relevant but only among subjects with low `POST1`. Finally, `HRSD` and `POST1` interactions are depicted.
+The figures show random  and the fixed effects. Again the subject effects are significant. We back transformed the fixed effects in linear scale and added 0.95-confidence level bands. It is evident the reduction in reaction time as `AECI` increases. The `DUH` values do not seem to have a considerable impact while `Pre` and `Post` interactions are relevant but only among subjects with low `Post`. Finally, `DUH` and `Post` interactions are depicted.
 
 ```{r randomeff, height=4, width=6, echo=FALSE}
 #plotREsim(REsim(lmm, n.sims = 100), stat = 'median', sd = TRUE)
@@ -146,24 +160,30 @@ randeff.plot2(lmm)
 
 ```{r fixedeff, height=4, width=6, echo=FALSE}
 require(effects)
-plot(effects::Effect(c("POST1"), lmm, transformation=list(link=log, inverse=exp)),
+plot(effects::Effect(c("Post"), lmm, transformation=list(link=log, inverse=exp)),
      cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",main="", bg="grey50",fg="black",
      alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
 
-plot(effects::Effect(c("AMSP"), lmm, transformation=list(link=log, inverse=exp)),
+plot(effects::Effect(c("AECI"), lmm, transformation=list(link=log, inverse=exp)),
      cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",xlab="Motivation",main="", bg="grey50",fg="black",
      alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
 
-plot(effects::Effect(c("HRSD"), lmm, transformation=list(link=log,inverse=exp)),
+plot(effects::Effect(c("DUH"), lmm, transformation=list(link=log,inverse=exp)),
      cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",main="",xlab="Use", bg="grey50",fg="black",
      alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
-#plot(effects::Effect(c("PRE","POST1"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
+#plot(effects::Effect(c("Pre","Post"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
 
-plot(effects::Effect(c("HRSD","POST1"), lmm, transformation=list(link=log, inverse=exp)),
-     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",main="",xlab="Use", bg="grey50",fg="black",
-     alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black"))
+plot(effects::Effect(c("DUH","Post"),x.var="DUH", lmm, transformation=list(link=log, inverse=exp)),
+     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",main="", bg="grey50",fg="black",
+     alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black"),layout=c(4,1))
 #require(merTools)
 #plotFEsim(FEsim(lmm, n.sims = 100), level = 0.9, stat = 'median', intercept = FALSE)
+
+hist(DLM$Pre)
+
+library(interplot)
+interplot(m = lmm, var1 = "DUH", var2 = "Post",hist=TRUE)+xlab("Post")+ylab("DUH")
+
 ```
 
 
@@ -175,15 +195,15 @@ plot(effects::Effect(c("HRSD","POST1"), lmm, transformation=list(link=log, inver
 par(mfrow=c(3,2))
 # plot(lm4,which=1:4)
 
-plot(fitted(lmm, type = "response"), residuals(lmm, type = "response"),
+plot(fitted(lmm, Type = "response"), residuals(lmm, Type = "response"),
      main = "Conditional residuals", xlab = "Predicted", ylab = "Residuals")
 
-res <- residuals(lmm, type = "response")
+res <- residuals(lmm, Type = "response")
 qqnorm(res, main = "Conditional residuals, QQplot")
 qqline(res)
 
-#lm.0 <- lm(log(Time) ~ (type + LEAYRS + (PRE + POST1)^2 + AMSP + HRSD + POST1*HRSD ), data = DLM)
-lm.0 <- lm(log(Time) ~ (POST1 + AMSP + HRSD + POST1*HRSD ), data = DLM)
+#lm.0 <- lm(log(Time) ~ (Type + LeaYrs + (Pre + Post)^2 + AECI + DUH + Post*DUH ), data = DLM)
+lm.0 <- lm(log(Time) ~ (Post + AECI + DUH + Post*DUH ), data = DLM)
 x <- model.matrix(lm.0)
 pred <- x %*% fixef(lmm)
 res <- DLM$Time - pred
@@ -194,8 +214,8 @@ qqline(res)
 ```
 
 ```{r plot1, fig.width=3, echo=FALSE, eval=FALSE}
-plot(lmm,type=c("p","smooth"))
-plot(lmm,sqrt(abs(resid(.))) ~ fitted(.), type=c("p","smooth"))
+plot(lmm,Type=c("p","smooth"))
+plot(lmm,sqrt(abs(resid(.))) ~ fitted(.), Type=c("p","smooth"))
 qqmath(lmm,id=0.005)
 # package HLMdiag influence.ME
 ```
@@ -208,7 +228,7 @@ The joint qqplot looks normal. The marginal looks less nice.
 
 ```{r anova}
 require(lmerTest)
-lmm <- lmer(log(Time) ~  type + LEAYRS + (PRE + POST1)^2 + AMSP + HRSD + POST1*HRSD + (1 | List:Name) + (1 | List:type:Order), data = DLM, REML=FALSE)
+lmm <- lmer(log(Time) ~  Type + LeaYrs + (Pre + Post)^2 + AECI + DUH + Post*DUH + (1 | List:Subject) + (1 | List:Type:Trial), data = DLM, REML=FALSE)
 anova(lmm)
 summary(lmm)
 ```

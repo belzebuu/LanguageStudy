@@ -29,20 +29,20 @@ load("size.RData")
 
 
 ```{r dataoverview2, eval=TRUE, echo=TRUE, warning=FALSE}
-summary(select(Orientation,PRE,POST1,LEAYRS,HRSD,AMSP,Time))
-summary(select(Size,PRE,POST1,LEAYRS,HRSD,AMSP,Time))
+summary(select(Orientation,Pre,Post,LeaYrs,DUH,AECI,Time))
+summary(select(Size,Pre,Post,LeaYrs,DUH,AECI,Time))
 
-Orientation %>% select(-Name,-List,-type,-Order) %>% summarize_each(funs(mean, "mean", mean(., na.rm = TRUE)))
-Orientation %>% select(-Name,-List,-type,-Order) %>% summarize_each(funs(sd, "sd", sd(., na.rm = TRUE)))
+Orientation %>% select(-Subject,-List,-Type,-Trial) %>% summarize_each(funs(mean, "mean", mean(., na.rm = TRUE)))
+Orientation %>% select(-Subject,-List,-Type,-Trial) %>% summarize_each(funs(sd, "sd", sd(., na.rm = TRUE)))
 
-Size %>% select(-Name,-List,-type,-Order) %>% summarize_each(funs(mean, "mean", mean(., na.rm = TRUE)))
-Size %>% select(-Name,-List,-type,-Order) %>% summarize_each(funs(sd, "sd", sd(., na.rm = TRUE)))
-#plot(select(DLM,PRE,POST1,LEAYRS,HRSD,AMSP,Time))
+Size %>% select(-Subject,-List,-Type,-Trial) %>% summarize_each(funs(mean, "mean", mean(., na.rm = TRUE)))
+Size %>% select(-Subject,-List,-Type,-Trial) %>% summarize_each(funs(sd, "sd", sd(., na.rm = TRUE)))
+#plot(select(DLM,Pre,Post,LeaYrs,DUH,AECI,Time))
 #require(tabplot)
-#tableplot(select(DLM,PRE,POST1,LEAYRS,HRSD,AMSP,Time))
+#tableplot(select(DLM,Pre,Post,LeaYrs,DUH,AECI,Time))
 ```
 
-We plot a generalized pairs plot, that is a scatter plot for every pair of variables in our data. The comparison for  factors between the data in the orientation and size case can be seen in the last column, in the last row and in the diagonal. The other plots, outisde of the diagonal show the correlation between pairs of factors. We see that we have more data for the Orientation case and that the distribution of values for the PRE and HRSD variables are quiteœ different. Reference:
+We plot a generalized pairs plot, that is a scatter plot for every pair of variables in our data. The comparison for  factors between the data in the orientation and size case can be seen in the last column, in the last row and in the diagonal. The other plots, outisde of the diagonal show the correlation between pairs of factors. We see that we have more data for the Orientation case and that the distribution of values for the Pre and DUH variables are quiteœ different. Reference:
 
 @Article{gpp,
   author = {John W Emerson and Walton A Green and Barret Schloerke and Jason Crowley and Dianne Cook and Heike Hofmann and Hadley Wickham},
@@ -58,12 +58,12 @@ We plot a generalized pairs plot, that is a scatter plot for every pair of varia
 
 ```{r dataoverview3, eval=TRUE, echo=FALSE, fig.height=10, fig.width=10, warning=FALSE}
 DF<-rbind(data.frame(Orientation,case="Orientation"),data.frame(Size,case="Size"))
-#ggscatmat(select(DF,PRE,POST1,LEAYRS,HRSD,AMSP,Time,case),
-#        columns=c("PRE","POST1","LEAYRS","HRSD","AMSP","Time"),
+#ggscatmat(select(DF,Pre,Post,LeaYrs,DUH,AECI,Time,case),
+#        columns=c("Pre","Post","LeaYrs","DUH","AECI","Time"),
 #                    #columns = 2:4, 
 #          color="case", alpha=0.8)
-ggpairs(select(DF,PRE,POST1,LEAYRS,HRSD,AMSP,Time,case),aes(color=case),
-        columns=c("PRE","POST1","LEAYRS","HRSD","AMSP","Time","case"),
+ggpairs(select(DF,Pre,Post,LeaYrs,DUH,AECI,Time,case),aes(color=case),
+        columns=c("Pre","Post","LeaYrs","DUH","AECI","Time","case"),
          scatter.pars=list(pch=19)
 #        lower = list(
 #      continuous = wrap("dot",alpha=0.8,size=2),
