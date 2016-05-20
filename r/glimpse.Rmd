@@ -57,19 +57,69 @@ We plot a generalized pairs plot, that is a scatter plot for every pair of varia
 }
 
 ```{r dataoverview3, eval=TRUE, echo=FALSE, fig.height=10, fig.width=10, warning=FALSE}
-DF<-rbind(data.frame(Orientation,case="Orientation"),data.frame(Size,case="Size"))
+DF<-rbind(data.frame(Orientation,case="L1 German\n (Orientation)"),data.frame(Size,case="L1 Spanish\n (Size)"))
 #ggscatmat(select(DF,Pre,Post,LeaYrs,DUH,AECI,Time,case),
 #        columns=c("Pre","Post","LeaYrs","DUH","AECI","Time"),
 #                    #columns = 2:4, 
 #          color="case", alpha=0.8)
-ggpairs(select(DF,Pre,Post,LeaYrs,DUH,AECI,Time,case),aes(color=case),
+
+mybin <- function(data, mapping, ...) {
+  ggplot(data=data,mapping=mapping) +
+  geom_histogram(aes(y=..density..),      # Histogram with density instead of count on y-axis
+                     bins=20)#binwidth=.5,
+                     #colour="black", fill="white") 
+      + facet_grid( case ~ .)
+}  
+  
+pm <- ggpairs(select(DF,Pre,Post,LeaYrs,DUH,AECI,Time,case),aes(color=case),
         columns=c("Pre","Post","LeaYrs","DUH","AECI","Time","case"),
-         scatter.pars=list(pch=19)
-#        lower = list(
-#      continuous = wrap("dot",alpha=0.8,size=2),
+         scatter.pars=list(pch=19),
+#         lower = list(continuous = wrap("density", alpha = 0.5), combo = "box"),
+      #     lower = list(combo = wrap("density", alpha = 0.5)),
+    #  upper = list(continuous = wrap("points", alpha = 0.3), combo = wrap("dot", alpha = 0.4))
+ # diag = list(continuous = ggally_mysmooth)
+
+          lower = list(
+          #      continuous = wrap("dot",alpha=0.8,size=2),
+# 
+lower = list(combo = wrap("facethist", position="identity", bins=15)) #binwidth = 1)
+#  combo=wrap(mybin)
+#    combo = wrap("facethist",  stat = "density", bins=20)
 #    combo = "facetdensity"
+#              combo = "denstrip"
     #mapping = aes(color = case)
-#    )
-        )
+)  
+)
+pm
 ```
+
+```{r dataoverview4, eval=TRUE, echo=FALSE, fig.height=3, fig.width=10, warning=FALSE}
+# retrieve the third row, first column plot
+#p <- p + aes(color = time)
+#p
+plotList <- list()
+for (i in 1:5) {
+  plotList[[i]] <- pm[7,i]
+}
+plotList<- list(
+  ggplot(DF,aes(x=Pre,color=case))+geom_histogram(aes(y=..density..), position="identity", bins=20) + facet_grid( case ~ .),
+  ggplot(DF,aes(x=Post,color=case))+geom_histogram(aes(y=..density..),position="identity", bins=20) + facet_grid( case ~ .),
+  ggplot(DF,aes(x=LeaYrs,color=case))+geom_histogram(aes(y=..density..), position="identity",bins=20) + facet_grid( case ~ .),
+  ggplot(DF,aes(x=DUH,color=case))+geom_histogram(aes(y=..density..), position="identity",bins=20) + facet_grid( case ~ .),
+  ggplot(DF,aes(x=AECI,color=case))+geom_histogram(aes(y=..density..), position="identity",bins=20) + facet_grid( case ~ .)
+)
+pmat <- ggmatrix(
+  plotList,
+  nrow = 1, ncol = 5,
+  xAxisLabels = c("Pre","Post","LeaYrs","DUH","AECI"),
+  yAxisLabels = c("Density")
+  #showStrips = TRUE,
+  #title = "Matrix Title"
+)
+pmat+ theme_bw()
+#library(reshape2)
+#d <- melt(DF, id.vars=c("Subject","Trial","case","Type"))
+```
+
+
 

@@ -136,8 +136,27 @@ lmm<-ft$model
 ## Exhaustive search
 
 ```{r dredge, echo=TRUE, eval=TRUE, warning=FALSE}
-lmm.6<-lmer(log(Time) ~ Type + List + LeaYrs + Post + Pre + Post*Pre + (1 | List:Subject) + (1 | List:Type:Trial) + Type:List + Pre:Post,data=DLM,na.action="na.fail",REML=FALSE)
-#lmm.6 <- lmer(log(Time) ~ (Type + List + LeaYrs + Post + Pre + AECI + DUH) + AECI*DUH + Post*Pre + (1 | List:Subject) + (1 | List:Type:Trial), data = DLM, na.action="na.fail",REML=FALSE)
+lmm.6<-lmer(log(Time) ~ Type + List + LeaYrs + Post + Pre + AECI + DUH + (1 | List:Subject) + (1 | List:Type:Trial) +
+           Type:List + Pre:Post + List:LeaYrs + Pre:AECI + Type:DUH,
+          data=DLM, na.action="na.fail", REML=FALSE)
+
+## List:DUH    0.0010  0.0010     1   97.25  0.0056        1 0.9406
+## LeaYrs:AECI 0.0014  0.0014     1   96.03  0.0081        2 0.9286
+## Pre:DUH     0.0035  0.0035     1  100.11  0.0204        3 0.8868
+## Type:Pre    0.0045  0.0045     1 1349.04  0.0265        4 0.8706
+## List:Post   0.0124  0.0124     1  103.58  0.0727        5 0.7880
+## Post:DUH    0.0142  0.0142     1   98.69  0.0831        6 0.7738
+## Post:AECI   0.0136  0.0136     1  100.91  0.0796        7 0.7785
+## List:AECI   0.0193  0.0193     1  102.52  0.1129        8 0.7375
+## LeaYrs:Pre  0.0202  0.0202     1   99.57  0.1184        9 0.7316
+## List:Pre    0.0238  0.0238     1  102.86  0.1395       10 0.7095
+## Type:Post   0.0656  0.0656     1 1381.78  0.3841       11 0.5355
+## LeaYrs:DUH  0.0773  0.0773     1  101.13  0.4527       12 0.5026
+## LeaYrs:Post 0.0729  0.0729     1  109.56  0.4268       13 0.5149
+## Type:AECI   0.0861  0.0861     1 1345.23  0.5043       14 0.4777
+## AECI:DUH    0.0917  0.0917     1  104.06  0.5371       15 0.4653
+## Type:LeaYrs 0.0934  0.0934     1 1336.76  0.5468       16 0.4598
+
 
 library(MuMIn)
 dredge.res<-dredge(lmm.6, beta = c("none"), evaluate = TRUE, rank = "AICc", fixed = NULL, m.lim = NULL,  trace = FALSE)

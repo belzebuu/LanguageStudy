@@ -94,6 +94,7 @@ approximation for degrees of freedom and a backward elimination of non-significa
 
 
 ```{r mixedmodels2, warning=TRUE}
+
 lmm.1 <- update(lmm, .~. - Type)
 anova(lmm,lmm.1)
 
