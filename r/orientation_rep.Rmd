@@ -85,7 +85,9 @@ lmm <- lmer(log(Time) ~  Type + LeaYrs + (Pre + Post)^2 + AECI + DUH + (1 | List
 #summary(lmm)
 ```
 
-We use a  manual, step-forward procedure with likelihood ratio test to see which of the fixed effects are significant.
+## Heuristic Search
+
+We use a  manual, step-forward procedure with likelihood ratio test to prepare an initial model for exhaustive search.
 
 
 ```{r mixedmodels2, warning=TRUE}
@@ -135,6 +137,8 @@ lmm<-ft$model
 
 ## Exhaustive search
 
+Using the insight from the previous analysis we construct an initial model to search exhaustively.
+
 ```{r dredge, echo=TRUE, eval=TRUE, warning=FALSE}
 lmm.6<-lmer(log(Time) ~ Type + List + LeaYrs + Post + Pre + AECI + DUH + (1 | List:Subject) + (1 | List:Type:Trial) +
            Type:List + Pre:Post + List:LeaYrs + Pre:AECI + Type:DUH,
@@ -165,52 +169,12 @@ attr(dredge.res, "model.calls")[1]
 ```
 
 
-```{r confintstd, eval=FALSE, echo=FALSE}
-confint(lmm,method="Wald")
-confint(lmm,method="boot")
-```
+The final model on which we base our analysis is:
 
-
-The figures show random and the fixed effects. The random effects show that the different subjects imply a significantly different intercept. In the plot of the fixed effects, we back transformed the effects in linear scale and added 0.95-confidence level bands. It is evident the reduction in reaction time as learning years increase. As far as proficency is concerned, we see that at high values of `Post` (indicated by the dark grey vertical bar in the strip band) in the top two plots, the `Pre` has little impact, meaning that presence or absence of previous knoweledge of construction does not have an impact when the `Post` value is however high.  On the contrary, for low values of Post the impact is considerable, in particular the subjects that achieved a value of the `Post` test lower than the value of the `Pre` test perform much better than those with a low value in both `Post` and `Pre`. The last plot shows the histogram of entries with respect to the `Post` value. The number of subjects with low `Post` values is however low, which is reflected in the much wider confidence bands of the preceeding plots. 
-
-
-
-```{r randomeff, height=4, width=6, echo=FALSE}
-#plotREsim(REsim(lmm, n.sims = 100), stat = 'median', sd = TRUE)
-source("lib.R")
-randeff.plot2(lmm)
-```
-
-```{r fixedeff, height=4, width=6, echo=FALSE}
-#require(merTools)
-#plotFEsim(FEsim(lmm, n.sims = 100), level = 0.9, stat = 'median', intercept = FALSE)
-require(effects)
-
-plot(effects::Effect(c("Post"), lmm, transformation=list(link=log, inverse=exp)),
-     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",xlab="Post",main="", 
-     bg="grey50",fg="black", alternating=FALSE,
-     par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black"))
-
-plot(effects::Effect(c("Pre"), lmm, transformation=list(link=log, inverse=exp)),
-     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",main="", 
-     bg="grey50",fg="black",alternating=FALSE,
-     par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
-
-plot(effects::Effect(c("LeaYrs"), lmm, transformation=list(link=log, inverse=exp)),
-     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",xlab="Proficiency",main="",
-     bg="grey50",fg="black",alternating=FALSE,
-     par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
-
-plot(effects::Effect(c("Pre","Post"), lmm, xlevels=list(Pre=4), x.var="Post", transformation=list(link=log, inverse=exp)),
-     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",main="", bg="grey50",fg="black",alternating=FALSE,
-     par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black"),layout=c(4,1)) 
-
-
-hist(DLM$Pre)
-
-library(interplot)
-interplot(m = lmm, var1 = "Post", var2 = "Pre",hist=TRUE)+xlab("Pre")+ylab("Post")
-
+```{r fitmodel, echo=TRUE}
+lmm <- lmer(formula = log(Time) ~ AECI + LeaYrs + List + Post + Pre + 
+    Type + (1 | List:Subject) + (1 | List:Type:Trial) + AECI:Pre + 
+    LeaYrs:List + List:Type + Post:Pre, data = DLM, REML = FALSE)
 ```
 
 
@@ -261,8 +225,61 @@ The joint qqplot looks normal. The marginal looks less nice.
 
 ```{r anova}
 require(lmerTest)
-lmm <- lmer(log(Time) ~  Type + LeaYrs + (Pre + Post)^2 + AECI + DUH + Post*DUH + (1 | List:Subject) + (1 | List:Type:Trial), data = DLM, REML=FALSE)
+## lmm <- lmer(log(Time) ~  Type + LeaYrs + (Pre + Post)^2 + AECI + DUH + Post*DUH + (1 | List:Subject) + (1 | List:Type:Trial), data = DLM, REML=FALSE)
 anova(lmm)
 summary(lmm)
+```
+
+
+
+## Conclusions
+
+
+```{r confintstd, eval=FALSE, echo=FALSE}
+confint(lmm,method="Wald")
+confint(lmm,method="boot")
+```
+
+
+The figures show random and the fixed effects. The random effects show that the different subjects imply a significantly different intercept. In the plot of the fixed effects, we back transformed the effects in linear scale and added 0.95-confidence level bands. It is evident the reduction in reaction time as learning years increase. As far as proficency is concerned, we see that at high values of `Post` (indicated by the dark grey vertical bar in the strip band) in the top two plots, the `Pre` has little impact, meaning that presence or absence of previous knoweledge of construction does not have an impact when the `Post` value is however high.  On the contrary, for low values of Post the impact is considerable, in particular the subjects that achieved a value of the `Post` test lower than the value of the `Pre` test perform much better than those with a low value in both `Post` and `Pre`. The last plot shows the histogram of entries with respect to the `Post` value. The number of subjects with low `Post` values is however low, which is reflected in the much wider confidence bands of the preceeding plots. 
+
+
+
+```{r randomeff, height=4, width=6, echo=FALSE}
+#plotREsim(REsim(lmm, n.sims = 100), stat = 'median', sd = TRUE)
+source("lib.R")
+randeff.plot2(lmm)
+```
+
+```{r fixedeff, height=4, width=6, echo=FALSE}
+#require(merTools)
+#plotFEsim(FEsim(lmm, n.sims = 100), level = 0.9, stat = 'median', intercept = FALSE)
+require(effects)
+
+plot(effects::Effect(c("Post"), lmm, transformation=list(link=log, inverse=exp)),
+     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",xlab="Post",main="", 
+     bg="grey50",fg="black", alternating=FALSE,
+     par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black"))
+
+plot(effects::Effect(c("Pre"), lmm, transformation=list(link=log, inverse=exp)),
+     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",main="", 
+     bg="grey50",fg="black",alternating=FALSE,
+     par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
+
+plot(effects::Effect(c("LeaYrs"), lmm, transformation=list(link=log, inverse=exp)),
+     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",xlab="Proficiency",main="",
+     bg="grey50",fg="black",alternating=FALSE,
+     par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
+
+plot(effects::Effect(c("Pre","Post"), lmm, xlevels=list(Pre=4), x.var="Post", transformation=list(link=log, inverse=exp)),
+     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",main="", bg="grey50",fg="black",alternating=FALSE,
+     par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black"),layout=c(4,1)) 
+
+
+hist(DLM$Pre)
+
+library(interplot)
+interplot(m = lmm, var1 = "Post", var2 = "Pre",hist=TRUE)+xlab("Pre")+ylab("Post")
+
 ```
 
