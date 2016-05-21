@@ -35,6 +35,7 @@ library(latticeExtra)
 
 ## Data analysis
 
+
 We load the data and remove the cases with NA values.
 ```{r data, echo=FALSE}
 load("orientation.RData")
@@ -42,21 +43,32 @@ DLM<-Orientation
 num<-DLM %>% group_by(List) %>% summarize(n_distinct(Subject))
 ```
 
-We have `r nlevels(DLM$Subject)` subjects for a total of `r dim(DLM)[1]` observations. There are `r as.numeric(num[1,2])` subjects in list A and  `r as.numeric(num[2,2])` in list B.
+We have `r nlevels(DLM$Subject)` subjects for a total of `r dim(DLM)[1]` observations.  The subjects are distributed between the lists as follows: 
+
+
+```{r echo=FALSE, results=TRUE}
+print(num)
+```
+
 
 ```{r naomit, echo=FALSE}
 DLM<-na.omit(DLM)
 DLM$Subject<-factor(DLM$Subject)
 num<-DLM %>% group_by(List) %>% summarize(n_distinct(Subject))
 ```
+After removal of entries with missing data due to wrong answers, we have `r nlevels(DLM$Subject)` subjects and `r dim(DLM)[1]` observations left.  The subjects are distributed between the lists as follows: 
 
-After removal of entries with missing data due to wrong answers, we have `r nlevels(DLM$Subject)` subjects and `r dim(DLM)[1]` observations left. There are `r as.numeric(num[1,2])` subjects in list A and  `r as.numeric(num[2,2])` in list B.
+
+```{r echo=FALSE, results=TRUE}
+print(num)
+```
 
 ```{r dataoverview, eval=FALSE, echo=FALSE}
 # Let's have a glimpse at the data:
 # tbl_df(DLM)
 glimpse(DLM)
 ```
+
 
 
 <!--We removed the subjects that had `Post` or `Post2` smaller than 75%. -->
@@ -75,7 +87,7 @@ We consider the following independent variables:
 
 5. `DUH`  a numerical variable with values ranging from 0 to 11.5. L2 use in hours per day.
 
-We rescaled some of these variables to be on similar scales. We treat these as fixed factors under study. In addition we have the random factors described earlier. The same modelling set up applies here. 
+We rescaled some of these variables to be on similar scales. We treat these as fixed factors under study. In addition we have the random factors given by trials and subjects nested within the lists. A nesting of the trial within the type seemed not necessary.
 
 Our base model is the following
 `lmm <- lmer(log(Time) ~ Type + LeaYrs + (Pre + Post)^2 + AECI + DUH + (1 | List:Subject) + (1 | List:Type:Trial), data = DLM)`
@@ -130,10 +142,12 @@ lmm.6 <- lmer(log(Time) ~ (Type + List + LeaYrs + Post + Pre + AECI + DUH)^2 + (
 require(lmerTest)
 ft<-step(lmm.6, lsmeans.calc = TRUE)
 ft
-summary(ft$model)
-lmm<-ft$model
-
+#summary(ft$model)
+#lmm<-ft$model
 ```
+
+Looking at the output produced above we see which second order terms had more chances to be included in the model. We include as many of those second order terms as we can while keeping an exhaustive search feasible. 
+
 
 ## Exhaustive search
 
@@ -144,27 +158,9 @@ lmm.6<-lmer(log(Time) ~ Type + List + LeaYrs + Post + Pre + AECI + DUH + (1 | Li
            Type:List + Pre:Post + List:LeaYrs + Pre:AECI + Type:DUH,
           data=DLM, na.action="na.fail", REML=FALSE)
 
-## List:DUH    0.0010  0.0010     1   97.25  0.0056        1 0.9406
-## LeaYrs:AECI 0.0014  0.0014     1   96.03  0.0081        2 0.9286
-## Pre:DUH     0.0035  0.0035     1  100.11  0.0204        3 0.8868
-## Type:Pre    0.0045  0.0045     1 1349.04  0.0265        4 0.8706
-## List:Post   0.0124  0.0124     1  103.58  0.0727        5 0.7880
-## Post:DUH    0.0142  0.0142     1   98.69  0.0831        6 0.7738
-## Post:AECI   0.0136  0.0136     1  100.91  0.0796        7 0.7785
-## List:AECI   0.0193  0.0193     1  102.52  0.1129        8 0.7375
-## LeaYrs:Pre  0.0202  0.0202     1   99.57  0.1184        9 0.7316
-## List:Pre    0.0238  0.0238     1  102.86  0.1395       10 0.7095
-## Type:Post   0.0656  0.0656     1 1381.78  0.3841       11 0.5355
-## LeaYrs:DUH  0.0773  0.0773     1  101.13  0.4527       12 0.5026
-## LeaYrs:Post 0.0729  0.0729     1  109.56  0.4268       13 0.5149
-## Type:AECI   0.0861  0.0861     1 1345.23  0.5043       14 0.4777
-## AECI:DUH    0.0917  0.0917     1  104.06  0.5371       15 0.4653
-## Type:LeaYrs 0.0934  0.0934     1 1336.76  0.5468       16 0.4598
-
-
 library(MuMIn)
 dredge.res<-dredge(lmm.6, beta = c("none"), evaluate = TRUE, rank = "AICc", fixed = NULL, m.lim = NULL,  trace = FALSE)
-print(dredge.res)
+#print(dredge.res)
 attr(dredge.res, "model.calls")[1]
 ```
 
@@ -185,7 +181,7 @@ lmm <- lmer(formula = log(Time) ~ AECI + LeaYrs + List + Post + Pre +
 
 ```{r plotlmr, fig.height=8}
 
-par(mfrow=c(3,2))
+par(mfrow=c(2,2))
 # plot(lm4,which=1:4)
 
 plot(fitted(lmm, Type = "response"), residuals(lmm, Type = "response"),
@@ -196,10 +192,12 @@ qqnorm(res, main = "Conditional residuals, QQplot")
 qqline(res)
 #
 #lm.0 <- lm(log(Time) ~ ( Type + LeaYrs + (Post + Pre)^2 + AECI + DUH), data = DLM)
-lm.0 <- lm(log(Time) ~ (LeaYrs + Post + Pre + Post*Pre),data=DLM)
-lm.0 <- lm(log(Time) ~ Type + List + LeaYrs + Post + Pre + Type:List + Post:Pre, data=DLM)
+#lm.0 <- lm(log(Time) ~ (LeaYrs + Post + Pre + Post*Pre),data=DLM)
+#lm.0 <- lm(log(Time) ~ Type + List + LeaYrs + Post + Pre + Type:List + Post:Pre, data=DLM)
+lmm.0 <- lm(formula = log(Time) ~ AECI + LeaYrs + List + Post + Pre + Type + AECI:Pre + 
+    LeaYrs:List + List:Type + Post:Pre, data = DLM)
 #lm.0 <- update(lmm,.~.-(1 | List:Subject) - (1 | List:Type:Trial))
-x <- model.matrix(lm.0)
+x <- model.matrix(lmm.0)
 pred <- x %*% fixef(lmm)
 res <- DLM$Time - pred
 plot(pred, res, main = "Marginal residuals", xlab = "Predicted", ylab = "Residuals")
@@ -225,7 +223,6 @@ The joint qqplot looks normal. The marginal looks less nice.
 
 ```{r anova}
 require(lmerTest)
-## lmm <- lmer(log(Time) ~  Type + LeaYrs + (Pre + Post)^2 + AECI + DUH + Post*DUH + (1 | List:Subject) + (1 | List:Type:Trial), data = DLM, REML=FALSE)
 anova(lmm)
 summary(lmm)
 ```
@@ -241,8 +238,7 @@ confint(lmm,method="boot")
 ```
 
 
-The figures show random and the fixed effects. The random effects show that the different subjects imply a significantly different intercept. In the plot of the fixed effects, we back transformed the effects in linear scale and added 0.95-confidence level bands. It is evident the reduction in reaction time as learning years increase. As far as proficency is concerned, we see that at high values of `Post` (indicated by the dark grey vertical bar in the strip band) in the top two plots, the `Pre` has little impact, meaning that presence or absence of previous knoweledge of construction does not have an impact when the `Post` value is however high.  On the contrary, for low values of Post the impact is considerable, in particular the subjects that achieved a value of the `Post` test lower than the value of the `Pre` test perform much better than those with a low value in both `Post` and `Pre`. The last plot shows the histogram of entries with respect to the `Post` value. The number of subjects with low `Post` values is however low, which is reflected in the much wider confidence bands of the preceeding plots. 
-
+The figures below show random and the fixed effects. The random effects show that the different subjects imply a significantly different intercept. In the plot of the fixed effects, we back transformed the effects in linear scale and added 0.95-confidence level bands. 
 
 
 ```{r randomeff, height=4, width=6, echo=FALSE}
@@ -251,35 +247,64 @@ source("lib.R")
 randeff.plot2(lmm)
 ```
 
+For the fixed effects we plot all plots relative to statistically significant terms. 
+The instructive plots are the main effect of `LeaYrs` and the interaction between `Post` and `Pre`, which, we belive, explains the significance of the `Post` term as well.
+
+* The reaction time decreases as learning years increase. 
+
+* For low values of `Pre` an increase of `Post` reduces reaction times. The reduction fades away as `Pre` increases. 
+
+
+
+
 ```{r fixedeff, height=4, width=6, echo=FALSE}
 #require(merTools)
 #plotFEsim(FEsim(lmm, n.sims = 100), level = 0.9, stat = 'median', intercept = FALSE)
 require(effects)
+
+plot(effects::Effect(c("AECI"), lmm, transformation=list(link=log, inverse=exp)),
+     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",main="",
+     bg="grey50",fg="black",alternating=FALSE,
+     par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
+
+plot(effects::Effect(c("LeaYrs"), lmm, transformation=list(link=log, inverse=exp)),
+     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",main="",
+     bg="grey50",fg="black",alternating=FALSE,
+     par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
+
+plot(effects::Effect(c("List"), lmm, transformation=list(link=log, inverse=exp)),
+     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",main="",
+     bg="grey50",fg="black",alternating=FALSE,
+     par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black"))
 
 plot(effects::Effect(c("Post"), lmm, transformation=list(link=log, inverse=exp)),
      cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",xlab="Post",main="", 
      bg="grey50",fg="black", alternating=FALSE,
      par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black"))
 
-plot(effects::Effect(c("Pre"), lmm, transformation=list(link=log, inverse=exp)),
-     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",main="", 
-     bg="grey50",fg="black",alternating=FALSE,
-     par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
+#
+plot(effects::Effect(c("LeaYrs","List"), lmm, x.var="List", transformation=list(link=log, inverse=exp)),
+     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",main="", bg="grey50",fg="black",alternating=FALSE,
+     par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black"),layout=c(2,1)) 
 
-plot(effects::Effect(c("LeaYrs"), lmm, transformation=list(link=log, inverse=exp)),
-     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",xlab="Proficiency",main="",
-     bg="grey50",fg="black",alternating=FALSE,
-     par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
+plot(effects::Effect(c("List","Type"), lmm, x.var="List", transformation=list(link=log, inverse=exp)),
+     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",main="", bg="grey50",fg="black",alternating=FALSE,
+     par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black"),layout=c(2,1)) 
 
 plot(effects::Effect(c("Pre","Post"), lmm, xlevels=list(Pre=4), x.var="Post", transformation=list(link=log, inverse=exp)),
      cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",main="", bg="grey50",fg="black",alternating=FALSE,
      par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black"),layout=c(4,1)) 
 
-
 hist(DLM$Pre)
+```
 
+The last plot shows the histogram of entries with respect to the `Pre` value. The number of data point with low `Pre` values is however low, which is reflected in the much wider confidence bands of the preceeding plots. 
+
+
+Plot of the coefficient estimates of one variable conditional on the values of the other variable in the interaction term.
+
+```{r interplot, height=4, width=6, echo=FALSE}
 library(interplot)
 interplot(m = lmm, var1 = "Post", var2 = "Pre",hist=TRUE)+xlab("Pre")+ylab("Post")
-
 ```
 

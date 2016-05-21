@@ -123,7 +123,7 @@ confint(lmm,method="boot")
 #plotREsim(REsim(lmm, n.sims = 100), stat = 'median', sd = TRUE)
 source("lib.R")
 #randeff.plot(lmm,"Subject")
-#randeff.plot(lmm,"Type:List:Trial")
+#randeff.plot(lmm,"Type:List:Type:Trial")
 randeff.plot2(lmm)
 ```
 
@@ -149,7 +149,7 @@ From the figure we can observe that the random effects cause often a significant
 ## Diagnostic plots
 
 ```{r plotlmr, fig.height=8, echo=FALSE}
-#lmm<- glmer(Time ~ Lang + Type + (1 | Subject)+ (1 | Type:List:Trial), data = DLM,family=Gamma(link = "log"))
+#lmm<- glmer(Time ~ Lang + Type + (1 | Subject)+ (1 | Type:List:Type:Trial), data = DLM,family=Gamma(link = "log"))
 par(mfrow=c(2,2))
 # plot(lm4,which=1:4)
 

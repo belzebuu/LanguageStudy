@@ -103,7 +103,7 @@ We can conclude that L1 speakers have shorter reaction times than L2 speakers un
 #plotREsim(REsim(lmm, n.sims = 100), stat = 'median', sd = TRUE)
 source("lib.R")
 #randeff.plot(lmm,"Subject")
-#randeff.plot(lmm,"Type:List:Trial")
+#randeff.plot(lmm,"Type:List:Type:Trial")
 randeff.plot2(lmm)
 ```
 
@@ -128,7 +128,7 @@ plotFEsim(FEsim(lmm, n.sims = 100), level = 0.9, stat = 'median', intercept = FA
 ## Diagnostic plots
 
 ```{r plotlmr, fig.height=8}
-#lmm<- glmer(Time ~ Lang + Type + (1 | Subject)+ (1 | Type:List:Trial), data = DLM,family=Gamma(link = "identity"))
+#lmm<- glmer(Time ~ Lang + Type + (1 | Subject)+ (1 | Type:List:Type:Trial), data = DLM,family=Gamma(link = "identity"))
 par(mfrow=c(2,2))
 # plot(lm4,which=1:4)
 
