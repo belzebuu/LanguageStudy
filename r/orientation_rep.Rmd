@@ -23,7 +23,6 @@ DUH
 knitr::opts_chunk$set(echo = TRUE, dev='jpeg')
 options(formatR.arrow=TRUE, width=100, digits=5,show.signif.stars = TRUE)
 library(ggplot2)
-library(party)
 library(dplyr)
 library(lme4)
 #library(lmerTest)
@@ -77,9 +76,8 @@ We consider the following independent variables:
 
 1. `LeaYrs` a numerical variable with values ranging from 1 to 16. Learning in years.
 
-2. `Post` a percentage scaled to lay between 0 and 10. It indicates the post test proficency. 
-
-3. `Pre` a percentage scaled to lay between 0 and 10. It indicates the previous knowledge.
+2. `Pre` a percentage scaled to lay between 0 and 10. It indicates the previous knowledge.
+3. `Post` a percentage scaled to lay between 0 and 10. It indicates the post test proficency. 
 <!--- `RPV`  a numerical variable with values ranging from 1 to 4.5.-->
 <!--- `AMGE`  a numerical variable with values ranging from 1 to 5.-->
 
@@ -89,13 +87,34 @@ We consider the following independent variables:
 
 We rescaled some of these variables to be on similar scales. We treat these as fixed factors under study. In addition we have the random factors given by trials and subjects nested within the lists. A nesting of the trial within the type seemed not necessary.
 
-Our base model is the following
-`lmm <- lmer(log(Time) ~ Type + LeaYrs + (Pre + Post)^2 + AECI + DUH + (1 | List:Subject) + (1 | List:Type:Trial), data = DLM)`
+Our base model is the following:
+`lmm <- lmer(log(Time) ~ Type + LeaYrs + Pre + Post + AECI + DUH + (1 | List:Subject) + (1 | List:Type:Trial), data = DLM)`
 
 ```{r basicmodel}
-lmm <- lmer(log(Time) ~  Type + LeaYrs + (Pre + Post)^2 + AECI + DUH + (1 | List:Subject) + (1 | List:Type:Trial), data = DLM, REML=FALSE)
+lmm <- lmer(log(Time) ~  Type + LeaYrs + Pre + Post + AECI + DUH + (1 | List:Subject) + (1 | List:Type:Trial), data = DLM, REML=FALSE)
 #summary(lmm)
 ```
+
+
+We check whether the random effects are important to be included using the corrected AIC criterion:
+
+
+```{r randomeffectslrt, warning=TRUE}
+lmm.0 <- lm(log(Time) ~  Type + LeaYrs + Pre + Post + AECI + DUH, data = DLM)
+lmm.1 <- lmer(log(Time) ~ Type + LeaYrs + Pre + Post + AECI + DUH + (1 | List:Subject), data = DLM, REML=FALSE)
+lmm.2 <- lmer(log(Time) ~ Type + LeaYrs + Pre + Post + AECI + DUH + (1 | List:Type:Trial), data = DLM, REML=FALSE)
+AIC(lmm.0,lmm.1,lmm.2)
+
+lmm.4 <- update(lmm,.~.-(1 | List:Subject))
+anova(lmm.4,lmm)
+
+lmm.5 <- update(lmm,.~.-(1 | List:Type:Trial))
+anova(lmm.5,lmm)
+```
+
+
+
+We then consider which fixed effects to include in the model.
 
 ## Heuristic Search
 
@@ -120,21 +139,19 @@ anova(lmm.0,lmm.3)
 lmm.3 <- update(lmm.0, .~. + Post) 
 anova(lmm.0,lmm.3)
 
-lmm.3 <- update(lmm.0, .~. + Pre*Post) 
-anova(lmm.0,lmm.3)
-
 lmm.4 <- update(lmm.0, .~. + AECI)
 anova(lmm.0,lmm.4)
 
 lmm.5 <- update(lmm.0, .~. + DUH)
 anova(lmm.0,lmm.5)
+
+lmm.3 <- update(lmm.0, .~. + Pre*Post) 
+anova(lmm.0,lmm.3)
 ```
 
-We conclude that `LeaYrs` and the interaction `Pre` and `Post` are significant at a 0.05 significance level, while `Post` is significant at a 0.1 significance level.
-
-An automatic, step-backward procedure from the package lmerTest starting from a model that includes all second order fixed factor intereactions lead to a similar conclusion: the factors `Type`, `AECI`, `DUH` are not significant while  `LeaYrs`, `Pre`, `Post` and the interaction of these last two are significant.
-
-
+Further, we use an automatic, step-backward procedure from the package
+lmerTest starting from a model that includes all second order fixed
+factor intereactions to understand which second order interactions are likely to be relevant.
 
 ```{r mixedmodels4, echo=TRUE, eval=TRUE, warning=FALSE}
 lmm.6 <- lmer(log(Time) ~ (Type + List + LeaYrs + Post + Pre + AECI + DUH)^2 + (1|List) + (1 | List:Subject) + (1 | List:Type:Trial), data = DLM, na.action="na.fail",REML=FALSE)
@@ -165,7 +182,7 @@ attr(dredge.res, "model.calls")[1]
 ```
 
 
-The final model on which we base our analysis is:
+The final model on which we base our exhaustive search is:
 
 ```{r fitmodel, echo=TRUE}
 lmm <- lmer(formula = log(Time) ~ AECI + LeaYrs + List + Post + Pre + 
@@ -173,7 +190,7 @@ lmm <- lmer(formula = log(Time) ~ AECI + LeaYrs + List + Post + Pre +
     LeaYrs:List + List:Type + Post:Pre, data = DLM, REML = FALSE)
 ```
 
-
+See below, in the Anova section, the summary of this model.
 
 
 
@@ -190,10 +207,7 @@ plot(fitted(lmm, Type = "response"), residuals(lmm, Type = "response"),
 res <- residuals(lmm, Type = "response")
 qqnorm(res, main = "Conditional residuals, QQplot")
 qqline(res)
-#
-#lm.0 <- lm(log(Time) ~ ( Type + LeaYrs + (Post + Pre)^2 + AECI + DUH), data = DLM)
-#lm.0 <- lm(log(Time) ~ (LeaYrs + Post + Pre + Post*Pre),data=DLM)
-#lm.0 <- lm(log(Time) ~ Type + List + LeaYrs + Post + Pre + Type:List + Post:Pre, data=DLM)
+
 lmm.0 <- lm(formula = log(Time) ~ AECI + LeaYrs + List + Post + Pre + Type + AECI:Pre + 
     LeaYrs:List + List:Type + Post:Pre, data = DLM)
 #lm.0 <- update(lmm,.~.-(1 | List:Subject) - (1 | List:Type:Trial))
@@ -219,7 +233,9 @@ The joint qqplot looks normal. The marginal looks less nice.
 
 
 
-## Anova Table with Satterwhite 
+## p-values
+
+Anova of type III with Satterwhite Approximation:
 
 ```{r anova}
 require(lmerTest)
@@ -227,15 +243,17 @@ anova(lmm)
 summary(lmm)
 ```
 
+Bootstrap confidence intervals: 
+
+```{r confintstd, eval=FALSE, echo=FALSE}
+# confint(lmm,method="Wald")
+confint(lmm,method="boot")
+```
 
 
 ## Conclusions
 
 
-```{r confintstd, eval=FALSE, echo=FALSE}
-confint(lmm,method="Wald")
-confint(lmm,method="boot")
-```
 
 
 The figures below show random and the fixed effects. The random effects show that the different subjects imply a significantly different intercept. In the plot of the fixed effects, we back transformed the effects in linear scale and added 0.95-confidence level bands. 
@@ -248,7 +266,7 @@ randeff.plot2(lmm)
 ```
 
 For the fixed effects we plot all plots relative to statistically significant terms. 
-The instructive plots are the main effect of `LeaYrs` and the interaction between `Post` and `Pre`, which, we belive, explains the significance of the `Post` term as well.
+The instructive plots are the main effect of `LeaYrs` and the interaction between `Post` and `Pre`, which, we deem, explains the significance of the `Post` term as well.
 
 * The reaction time decreases as learning years increase. 
 

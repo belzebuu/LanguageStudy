@@ -60,8 +60,9 @@ glimpse(DLM)
 We consider the following independent variables:
 
 1. `LeaYrs` a numerical variable with values ranging from 1 to 16. Learning in years.
-2. `Post` a percentage scaled to lay between 0 and 10. It indicates the post test proficency. 
-3. `Pre` a percentage scaled to lay between 0 and 10. It indicates the previous knowledge.
+2. `Pre` a percentage scaled to lay between 0 and 10. It indicates the previous knowledge.
+3. `Post` a percentage scaled to lay between 0 and 10. It indicates the post test proficency. 
+
 <!--- `RPV`  a numerical variable with values ranging from 1 to 4.5.-->
 <!--- `AMGE`  a numerical variable with values ranging from 1 to 5.-->
 4. `AECI`  a numerical variable with values ranging from 1 to 5.
@@ -69,18 +70,38 @@ We consider the following independent variables:
 
 We rescaled some of these variables to be on similar scales. We treat these as fixed factors under study. In addition we have the random factors described earlier. The same modelling set up applies here.
 
-The basic model is: 
-`lmm <- lmer(log(Time) ~ Type + LeaYrs + (Pre + Post)^2 + AECI + DUH + Post*DUH +  (1 | List:Subject) + (1 | List:Type:Trial), data = DLM)`
+Our basic model is: 
+`lmm <- lmer(log(Time) ~ Type + LeaYrs + Pre + Post + AECI + DUH +  (1 | List:Subject) + (1 | List:Type:Trial), data = DLM)`
 
 ```{r basicmodel}
-lmm <- lmer(log(Time) ~  Type + LeaYrs + (Pre + Post)^2 + AECI + DUH + Post*DUH + (1 | List:Subject) + (1 | List:Type:Trial), data = DLM, REML=FALSE)
+lmm <- lmer(log(Time) ~  Type + LeaYrs + Pre + Post + AECI + DUH  + (1 | List:Subject) + (1 | List:Type:Trial), data = DLM, REML=FALSE)
 #summary(lmm)
 ```
 
-We use a  manual, step-forward procedure with likelihood ratio test to see which of the fixed effects are significant.
+
+We check whether the random effects are important to be included using the corrected AIC criterion:
 
 
-```{r mixedmodels2, warning=TRUE}
+```{r randomeffectslrt, warning=TRUE}
+lmm.0 <- lm(log(Time) ~  Type + LeaYrs + Pre + Post + AECI + DUH, data = DLM)
+lmm.1 <- lmer(log(Time) ~ Type + LeaYrs + Pre + Post + AECI + DUH + (1 | List:Subject), data = DLM, REML=FALSE)
+lmm.2 <- lmer(log(Time) ~ Type + LeaYrs + Pre + Post + AECI + DUH + (1 | List:Type:Trial), data = DLM, REML=FALSE)
+AIC(lmm.0,lmm.1,lmm.2)
+
+lmm.4 <- update(lmm,.~.-(1 | List:Subject))
+anova(lmm.4,lmm)
+
+lmm.5 <- update(lmm,.~.-(1 | List:Type:Trial))
+anova(lmm.5,lmm)
+```
+
+We then consider which fixed effects to include in the model.
+
+## Heuristic Search
+
+We use a  manual, step-forward procedure with likelihood ratio test to prepare an initial model for exhaustive search.
+
+```{r mixedmodels3, warning=TRUE}
 lmm.0 <- lmer(log(Time) ~  (1 | List:Subject) + (1 | List:Type:Trial), data = DLM)
 
 lmm.1 <- update(lmm.0, .~. + Type)
@@ -98,20 +119,20 @@ anova(lmm.0,lmm.3)
 lmm.3 <- update(lmm.0, .~. + Post) 
 anova(lmm.0,lmm.3)
 
-lmm.3 <- update(lmm.0, .~. + Pre*Post) 
-anova(lmm.0,lmm.3)
-
 lmm.4 <- update(lmm.0, .~. + AECI)
 anova(lmm.0,lmm.4)
 
 lmm.5 <- update(lmm.0, .~. + DUH)
 anova(lmm.0,lmm.5)
+
+lmm.3 <- update(lmm.0, .~. + Pre*Post) 
+anova(lmm.0,lmm.3)
 ```
 
-We conclude that only `AECI` has a significant effect at a 0.05 level while the Type has a significant effect at a level of 0.1.
 
-
-An automatic, step-backward procedure from the package lmerTest starting from a model that includes all second order fixed factor intereactions lead to a different conclusion: the factors AECI, Post, DUH and the interaction between these last two are significant.
+Further, we use an automatic, step-backward procedure from the package
+lmerTest starting from a model that includes all second order fixed
+factor intereactions to understand which second order interactions are likely to be relevant.
 
 
 ```{r mixedmodels4, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
@@ -119,72 +140,36 @@ require(lmerTest)
 lmm.6 <- lmer(log(Time) ~ (Type + LeaYrs + Post + Pre + AECI + DUH)^2 + (1 | List:Subject) + (1 | List:Type:Trial), data = DLM)
 ft<-step(lmm.6)
 ft
-summary(ft$model)
-lmm<-ft$model
+#summary(ft$model)
+#lmm<-ft$model
 ```
 
 
 ## Exhaustive search
 
 ```{r dredge, echo=TRUE, eval=TRUE, warning=FALSE}
-lmm.6 <- lmer(log(Time) ~ (Type + List + LeaYrs + Post + Pre + AECI + DUH)+AECI*DUH+Post*Pre + (1 | List:Subject) + (1 | List:Type:Trial), data = DLM, na.action="na.fail",REML=FALSE)
+lmm.6<-lmer(log(Time) ~ Type + List + LeaYrs + Post + Pre + AECI + DUH + (1 | List:Subject) + (1 | List:Type:Trial) +
+           Type:Post + Type:Pre +Pre:Post + Pre:AECI +LeaYrs:DUH + LeaYrs:Pre,
+          data=DLM, na.action="na.fail", REML=FALSE)
 
 library(MuMIn)
 dredge.res<-dredge(lmm.6, beta = c("none"), evaluate = TRUE, rank = "AICc", fixed = NULL, m.lim = NULL,  trace = FALSE)
-print(dredge.res)
+#print(dredge.res)
 attr(dredge.res, "model.calls")[1]
 ```
 
 
 
-Finally, Analysis of Variance Table of Type III  with  Satterthwaite 
-approximation for degrees of freedom gives produces yet another different analysis. It is reported at the end of this document.
+The final model on which we base our exhaustive search is:
 
-
-All three analysis indicate however that  `AECI`  is significant. 
-
-
-```{r confintstd, eval=FALSE, echo=FALSE}
-confint(lmm,method="Wald")
-confint(lmm,method="boot")
+```{r fitmodel, echo=TRUE}
+lmm <- lmer(formula = log(Time) ~ AECI + Post + Pre + Type + (1 | 
+    List:Subject) + (1 | List:Type:Trial) + AECI:Pre + Post:Pre + 
+    Post:Type + Pre:Type, data = DLM, REML = FALSE, na.action = "na.fail")
 ```
 
-
-The figures show random  and the fixed effects. Again the subject effects are significant. We back transformed the fixed effects in linear scale and added 0.95-confidence level bands. It is evident the reduction in reaction time as `AECI` increases. The `DUH` values do not seem to have a considerable impact while `Pre` and `Post` interactions are relevant but only among subjects with low `Post`. Finally, `DUH` and `Post` interactions are depicted.
-
-```{r randomeff, height=4, width=6, echo=FALSE}
-#plotREsim(REsim(lmm, n.sims = 100), stat = 'median', sd = TRUE)
-source("lib.R")
-randeff.plot2(lmm)
-```
-
-```{r fixedeff, height=4, width=6, echo=FALSE}
-require(effects)
-plot(effects::Effect(c("Post"), lmm, transformation=list(link=log, inverse=exp)),
-     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",main="", bg="grey50",fg="black",
-     alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
-
-plot(effects::Effect(c("AECI"), lmm, transformation=list(link=log, inverse=exp)),
-     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",xlab="Motivation",main="", bg="grey50",fg="black",
-     alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
-
-plot(effects::Effect(c("DUH"), lmm, transformation=list(link=log,inverse=exp)),
-     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",main="",xlab="Use", bg="grey50",fg="black",
-     alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
-#plot(effects::Effect(c("Pre","Post"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
-
-plot(effects::Effect(c("DUH","Post"),x.var="DUH", lmm, transformation=list(link=log, inverse=exp)),
-     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",main="", bg="grey50",fg="black",
-     alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black"),layout=c(4,1))
-#require(merTools)
-#plotFEsim(FEsim(lmm, n.sims = 100), level = 0.9, stat = 'median', intercept = FALSE)
-
-hist(DLM$Pre)
-
-library(interplot)
-interplot(m = lmm, var1 = "DUH", var2 = "Post",hist=TRUE)+xlab("Post")+ylab("DUH")
-
-```
+See below, in the Anova section, the summary of this model.
+Note that the main effects `LeaYrs` and `List` have not been included.
 
 
 
@@ -202,9 +187,9 @@ res <- residuals(lmm, Type = "response")
 qqnorm(res, main = "Conditional residuals, QQplot")
 qqline(res)
 
-#lm.0 <- lm(log(Time) ~ (Type + LeaYrs + (Pre + Post)^2 + AECI + DUH + Post*DUH ), data = DLM)
-lm.0 <- lm(log(Time) ~ (Post + AECI + DUH + Post*DUH ), data = DLM)
-x <- model.matrix(lm.0)
+lmm.0 <- lm(formula = log(Time) ~ AECI + Post + Pre + Type + AECI:Pre + Post:Pre + 
+      Post:Type + Pre:Type,data=DLM) 
+x <- model.matrix(lmm.0)
 pred <- x %*% fixef(lmm)
 res <- DLM$Time - pred
 plot(pred, res, main = "Marginal residuals", xlab = "Predicted", ylab = "Residuals")
@@ -224,11 +209,98 @@ qqmath(lmm,id=0.005)
 The joint qqplot looks normal. The marginal looks less nice. 
 
 
-## Anova Table with Satterwhite 
+
+
+
+
+## p-values
+
+Anova of type III with Satterwhite Approximation
 
 ```{r anova}
 require(lmerTest)
-lmm <- lmer(log(Time) ~  Type + LeaYrs + (Pre + Post)^2 + AECI + DUH + Post*DUH + (1 | List:Subject) + (1 | List:Type:Trial), data = DLM, REML=FALSE)
 anova(lmm)
 summary(lmm)
 ```
+
+Bootstrap confidence intervals
+
+```{r confintstd, eval=TRUE, echo=TRUE}
+#confint(lmm,method="Wald")
+confint(lmm,method="boot")
+```
+
+
+## Conclusions
+
+All analyses indicate  that  only `Post` and its interaction with `Pre` are significant effects. 
+
+
+
+The figures show random  and the fixed effects. Again the subject effects are significant. We back transformed the fixed effects in linear scale and added 0.95-confidence level bands. It is evident the reduction in reaction time as `AECI` increases. The `DUH` values do not seem to have a considerable impact while `Pre` and `Post` interactions are relevant but only among subjects with low `Post`. Finally, `DUH` and `Post` interactions are depicted.
+
+```{r randomeff, height=4, width=6, echo=FALSE}
+#plotREsim(REsim(lmm, n.sims = 100), stat = 'median', sd = TRUE)
+source("lib.R")
+randeff.plot2(lmm)
+```
+
+```{r fixedeff, height=4, width=6, echo=FALSE}
+require(effects)
+
+
+plot(effects::Effect(c("AECI"), lmm, transformation=list(link=log, inverse=exp)),
+     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",main="",
+     bg="grey50",fg="black",alternating=FALSE,
+     par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
+
+plot(effects::Effect(c("Post"), lmm, transformation=list(link=log, inverse=exp)),
+     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",xlab="Post",main="", 
+     bg="grey50",fg="black", alternating=FALSE,
+     par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black"))
+
+plot(effects::Effect(c("Pre"), lmm, transformation=list(link=log, inverse=exp)),
+     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",main="",
+     bg="grey50",fg="black",alternating=FALSE,
+     par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black"))
+
+plot(effects::Effect(c("Type"), lmm, transformation=list(link=log, inverse=exp)),
+     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",main="",
+     bg="grey50",fg="black",alternating=FALSE,
+     par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black"))
+
+#
+plot(effects::Effect(c("AECI","Pre"), lmm,  xlevels=list(Pre=4), x.var="AECI", transformation=list(link=log, inverse=exp)),
+     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",main="", bg="grey50",fg="black",alternating=FALSE,
+     par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black"),layout=c(4,1)) 
+
+plot(effects::Effect(c("Post","Type"), lmm, x.var="Post", transformation=list(link=log, inverse=exp)),
+     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",main="", bg="grey50",fg="black",alternating=FALSE,
+     par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black"),layout=c(2,1)) 
+
+plot(effects::Effect(c("Pre","Type"), lmm, x.var="Pre", transformation=list(link=log, inverse=exp)),
+     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",main="", bg="grey50",fg="black",alternating=FALSE,
+     par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black"),layout=c(2,1)) 
+
+plot(effects::Effect(c("Pre","Post"), lmm, xlevels=list(Pre=4), x.var="Post", transformation=list(link=log, inverse=exp)),
+     cex=1,width=0,lwd=1,ylab="Reaction Time (ms)",main="", bg="grey50",fg="black",alternating=FALSE,
+     par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black"),layout=c(4,1)) 
+
+
+hist(DLM$Pre)
+```
+
+The last plot shows the histogram of entries with respect to the `Pre` value. The number of data point with low `Pre` values is however low, which is reflected in the much wider confidence bands of the preceeding plots. 
+
+
+
+
+
+Plot of the coefficient estimates of one variable conditional on the values of the other variable in the interaction term.
+
+```{r interplot, height=4, width=6, echo=FALSE}
+library(interplot)
+interplot(m = lmm, var1 = "Post", var2 = "Pre",hist=TRUE)+xlab("Pre")+ylab("Post")
+```
+
+

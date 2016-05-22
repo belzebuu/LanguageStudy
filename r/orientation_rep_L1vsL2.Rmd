@@ -12,7 +12,6 @@ output:
 knitr::opts_chunk$set(echo = TRUE,dev='jpeg')
 options(formatR.arrow=TRUE, width=68, digits=5,show.signif.stars = TRUE)
 library(ggplot2)
-library(party)
 library(dplyr)
 library(lme4)
 #library(lmerTest)
@@ -65,85 +64,75 @@ the question order and with fixed effects associated with `Type` and `Lang`.
 In the experiment, we assigned randomly subjects to the two lists. Then we drew 8 questions per each
 Type (matched/mismatched) from each list. Hence question `order` is nested within `Type` and `List` and subjects (`Subject`) are nested within `List`.
 Within the list nesting subjects and questions are fully crossed. We fitted our model in R using the package `lme4` [add reference].
-In the syntax of that package the linear mixed model looks as follows: 
-`lmer(log(Time) ~ Type + Lang + (1 | List:Subject) + (1 | List:Type:Trial), data = DLM)`.
+
 We log-transformed the response variable as diagnostic plots (conditional and marginal residuals and qqplot) improved considerably. A Gamma family transformation with log link function yield much worse diagnostic plots.  The distribution of reaction times is right skewed and never reaches zero. Hence, logarithm transformation or generalized linear mixed models with Gamma family and log link function are commonly choice.  
 
 
-```{r summary}
-lmm<- lmer(log(Time) ~ Type + Lang + (1 | List:Subject)+ (1 | List:Type:Trial), data = DLM,REML=FALSE)
-#print(anova(lmm),signif.stars=TRUE)
-summary(lmm, transform="log")
-```
 
-We observe that the two random effects, subjects and questions, account for a good portion of the standard deviation of the residuals: 0.2569, 0.1553, 0.3839 respectively. The model is translated by means of a significant intercept. The estimated effects are in the transformed scale.
+Our starting model is: 
+`lmer(log(Time) ~ Type + List + Lang + (1 | List:Subject) + (1 | List:Type:Trial), data = DLM)`
 
-Note that due to the removal of entries with missing values, our experimental set up is not balanced. Hence, we do not report p-values for F or t statistics as there are no analytical results for null distributions of parameter estimates in complex situations (e.g., unbalanced or partially crossed designs) [cite Bates @Article{,
-    title = {Fitting Linear Mixed-Effects Models Using {lme4}},
-    author = {Douglas Bates and Martin M{\"a}chler and Ben Bolker and Steve Walker},
-    journal = {Journal of Statistical Software},
-    year = {2015},
-    volume = {67},
-    number = {1},
-    pages = {1--48},
-    doi = {10.18637/jss.v067.i01},
-  }].
-The likelihood ratio test for each individual factors results non significant at a level of 0.05 for the `Type` (0.8815) and for the interaction `Type:Lang` (0.3291). The other fixed and random effects are all significant. The package lmerTest makes availbale an analysis of variance of Type III  with  Satterthwaite 
-approximation for degrees of freedom and a backward elimination of non-significant effects. Both these two procedures confirm our results that  `Type` and `Type:Lang` are not significant.
+The random effects are significant. This is also supported by the portion of standard deviation of the residuals that is imputable to the two random effects. 
 
-
-
-```{r mixedmodels2, warning=TRUE}
-
-lmm.1 <- update(lmm, .~. - Type)
-anova(lmm,lmm.1)
-
-lmm.2 <- update(lmm, .~. - Lang)
-anova(lmm,lmm.2)
-
-lmm.3 <- update(lmm, .~. + (Type+Lang)^2)
-anova(lmm,lmm.3)
-
-lmm.4 <- update(lmm, .~. - (1|List:Subject))
-anova(lmm,lmm.4)
-
-lmm.5 <- update(lmm, .~. - (1|List:Type:Trial))
-anova(lmm,lmm.5)
+```{r basicmodel, warning=TRUE}
+lmm<- lmer(log(Time) ~ Type + Lang + List + (1 | List:Subject)+ (1 | List:Type:Trial), data = DLM, REML=FALSE)
 ```
 
 
-We plot the random and the fixed effects together with their 95% confidence levels in the Figure. The confidence levels are obtained by the estimated standard deviation and the normal distribution. However, other analysis with boostrapped confidence intervals confirmed the same conclusions.
+```{r randomeffectslrt, warning=FALSE, eval=FALSE, echo=FALSE}
+lm.0 <- lm(log(Time) ~ 1, data = DLM)
+# LeaYrs AECI AMGE
+lmm.0 <- lmer(log(Time) ~ (1 | List:Subject)+ (1 | List:Subject:Trial), data = DLM)
+AIC(lm.0,lmm.0)
 
-```{r confintstd, echo=FALSE, eval=FALSE}
-confint(lmm,method="Wald")
-confint(lmm,method="boot")
-```
+lmm.4 <- update(lmm,.~.-(1 | List:Subject))
+anova(lmm.4,lmm)
 
-```{r randomeff, height=6, width=4, echo=FALSE}
-#plotREsim(REsim(lmm, n.sims = 100), stat = 'median', sd = TRUE)
-source("lib.R")
-#randeff.plot(lmm,"Subject")
-#randeff.plot(lmm,"Type:List:Type:Trial")
-randeff.plot2(lmm)
-```
-
-```{r fixedeff, height=6, width=4, echo=FALSE}
-#plotFEsim(FEsim(lmm, n.sims = 100), level = 0.9, stat = 'median', intercept = FALSE)
+lmm.5 <- update(lmm,.~.-(1 | List:Type:Trial))
+anova(lmm.5,lmm)
 ```
 
 
-```{r fixedplot, height=4, width=5, echo=FALSE}
-plot(effects::Effect(c("Lang", "Type"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",xlab="Speakers",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
+## Likelihood ratio tests for main fixed effects
+
+```{r mixedmodels2, warning=FALSE}
+lmm.0 <- lmer(log(Time) ~ (1 | List:Subject)+ (1 | List:Type:Trial), data = DLM)
+lmm.1 <- update(lmm.0, .~. + Type)
+anova(lmm.0,lmm.1)
+
+lmm.2 <- update(lmm.0, .~. + Lang)
+anova(lmm.1,lmm.2)
+
+lmm.3 <- update(lmm, .~. + List)
+anova(lmm.2,lmm.3)
 ```
 
 
-From the figure we can observe that the random effects cause often a significant effect by shifting the intercept by a quantity larger than zero. For the fixed effects we transformed back the effects in the linear time scale of milliseconds. It is evident that L1 speakers have a shorter reaction time and that the Type does not have a significant impact.
 
 
-<!--
-## op <- options(contrasts = c("contr.sum", "contr.poly"))
-# Type + CoR + Hand + EO + List + CEF + SRRC + Pre + Post + Post2 + STAY + LeaYrs + DUH + RPV + AMGE + AECI, 
--->
+## Exhaustive search
+
+```{r dredge, echo=TRUE, eval=TRUE, warning=FALSE}
+lmm.6<-lmer(log(Time) ~ (Type + List + Lang)^2 + (1 | List:Subject) + (1 | List:Type:Trial),
+          data=DLM, na.action="na.fail", REML=FALSE)
+
+library(MuMIn)
+dredge.res<-dredge(lmm.6, beta = c("none"), evaluate = TRUE, rank = "AICc", fixed = NULL, m.lim = NULL,  trace = FALSE)
+#print(dredge.res)
+attr(dredge.res, "model.calls")[1]
+```
+
+
+The final model on which we base our exhaustive search is:
+
+```{r fitmodel, echo=TRUE}
+require(lmerTest)
+lmm <- lmer(formula = log(Time) ~ Lang + (1 | List:Subject) + 
+    (1 | List:Type:Trial), data = DLM, REML = FALSE)
+```
+
+See below, in the Anova section, the summary of this model.
+
 
 
 ## Diagnostic plots
@@ -160,7 +149,7 @@ res <- residuals(lmm, Type = "response")
 qqnorm(res, main = "Conditional residuals, QQplot")
 qqline(res)
 
-lm.0 <- lm(log(Time) ~ Type + Lang, data = DLM)
+lm.0 <- lm(log(Time) ~  Lang, data = DLM)
 x <- model.matrix(lm.0)
 pred <- x %*% fixef(lmm)
 res <- DLM$Time - pred
@@ -181,17 +170,75 @@ qqmath(lmm,id=0.005)
 The joint qqplot looks normal. The marginal looks less nice. 
 
 
-## Tables with p-values (Satterwhite approximation)
+## p-values
 
-It could be possible to include a syntetic ANOVA table like this:
+Although controversial we report the Anova of type III with Satterwhite approximation:
 
 ```{r anova, message=FALSE, warning=FALSE}
 require(lmerTest)
-lmm<- lmer(log(Time) ~ Type + Lang + (1 | List:Subject)+ (1 | List:Type:Trial), data = DLM,REML=FALSE)
 anova(lmm)
 ```
-however, as explained above it is controversial.
-It is also possible to have t-test and p-values like this:
+
+
 ```{r sum}
-summary(lmm)
+summary(lmm, transform="log")
 ```
+
+The statistical significance seems confirmed by boostrap confidence intervals:
+```{r confintstd, echo=FALSE, eval=FALSE}
+#confint(lmm,method="Wald")
+confint(lmm,method="boot")
+```
+
+
+We observe that the two random effects, subjects and trials, account for a good portion of the standard deviation of the residuals: 0.2569, 0.1553, 0.3839 respectively. The model is translated by means of a significant intercept. The estimated effects are in the transformed scale.
+
+Note that due to the removal of entries with missing values, our experimental set up is not balanced. Hence, we do not report p-values for F or t statistics as there are no analytical results for null distributions of parameter estimates in complex situations (e.g., unbalanced or partially crossed designs) [cite Bates @Article{,
+    title = {Fitting Linear Mixed-Effects Models Using {lme4}},
+    author = {Douglas Bates and Martin M{\"a}chler and Ben Bolker and Steve Walker},
+    journal = {Journal of Statistical Software},
+    year = {2015},
+    volume = {67},
+    number = {1},
+    pages = {1--48},
+    doi = {10.18637/jss.v067.i01},
+  }].
+The likelihood ratio test for each individual factors results non significant at a level of 0.05 for the `Type` (0.8815) and for the interaction `Type:Lang` (0.3291). The other fixed and random effects are all significant. The package lmerTest makes availbale an analysis of variance of Type III  with  Satterthwaite 
+approximation for degrees of freedom and a backward elimination of non-significant effects. Both these two procedures confirm our results that  `Type` and `Type:Lang` are not significant.
+
+
+## Conclusions
+
+We plot the random and the fixed effects together with their 95%
+confidence levels in the Figure. The confidence levels are obtained by
+the estimated standard deviation and the normal distribution. However,
+other analysis with boostrapped confidence intervals confirmed the
+same conclusions.
+
+
+```{r randomeff, height=6, width=4, echo=FALSE}
+#plotREsim(REsim(lmm, n.sims = 100), stat = 'median', sd = TRUE)
+source("lib.R")
+#randeff.plot(lmm,"Subject")
+#randeff.plot(lmm,"Type:List:Type:Trial")
+randeff.plot2(lmm)
+```
+
+```{r fixedeff, height=6, width=4, echo=FALSE}
+#plotFEsim(FEsim(lmm, n.sims = 100), level = 0.9, stat = 'median', intercept = FALSE)
+```
+
+
+```{r fixedplot, height=4, width=5, echo=FALSE}
+plot(effects::Effect(c("Lang"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",xlab="Speakers",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
+```
+
+
+From the figure we can observe that the random effects cause often a significant effect by shifting the intercept by a quantity larger than zero. For the fixed effects we transformed back the effects in the linear time scale of milliseconds. It is evident that L1 speakers have a shorter reaction time and that the Type does not have a significant impact.
+
+
+<!--
+## op <- options(contrasts = c("contr.sum", "contr.poly"))
+# Type + CoR + Hand + EO + List + CEF + SRRC + Pre + Post + Post2 + STAY + LeaYrs + DUH + RPV + AMGE + AECI, 
+-->
+
