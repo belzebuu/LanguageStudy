@@ -57,16 +57,9 @@ glimpse(DLM)
 
 We set up a categorical variable, `Lang`, to inform about the speakers L1 and L2 and a another categorical variable, `Type`, to inform about the Type of question MATCH and MISMATCH. Each different question is identified by the variable `Trial` that we treat as a categorical variable as well, since we assume no influence of the order in which the question was posed. Finally, we record in the variable `List` the list from which the question is drawn, that is, list A or list B. The response variable is reaction time measured in milliseconds.
 
-We are not intersted in the effect of the specific questions nor in those of the specific subjects. However, we are are interested in knowing whether these variables are important for the variance of responses. Hence, we
-specify a mixed effects model with random effects associated to the subjects and to
-the question order and with fixed effects associated with `Type` and `Lang`.
+We are not intersted in the effect of the specific trials or the specific subjects. However, we are interested in knowing whether these effects are important for the variance of responses. Hence, we specify a mixed effects model with random effects associated to the factors Trial and  Subject and fixed effects associated with the other factors. Due to the fact that we split trials between two lists and administered the two lists to different subjects the random effects of  Trial and  Subject are nested within List. Further, for the way we split trials, Trial is nested also within Type. Within the nesting structure subjects and questions are fully crossed. We fitted our model in R using the package `lme4` [add reference].
 
-In the experiment, we assigned randomly subjects to the two lists. Then we drew 8 questions per each
-Type (matched/mismatched) from each list. Hence question `order` is nested within `Type` and `List` and subjects (`Subject`) are nested within `List`.
-Within the list nesting subjects and questions are fully crossed. We fitted our model in R using the package `lme4` [add reference].
-
-We log-transformed the response variable as diagnostic plots (conditional and marginal residuals and qqplot) improved considerably. A Gamma family transformation with log link function yield much worse diagnostic plots.  The distribution of reaction times is right skewed and never reaches zero. Hence, logarithm transformation or generalized linear mixed models with Gamma family and log link function are commonly choice.  
-
+The distribution of reaction times is right skewed and never reaches zero. Under these conditions, logarithm transformation or generalized linear mixed models with Gamma family and log link function are common approaches to meet the assumptions underlying mixed linear models. In our case, we found that a log-transformed response variable imporved considerably the diagnostic plots (conditional and marginal residual qqplots) of the selected models. A Gamma family transformation with log link function yield much worse diagnostic plots. 
 
 
 Our starting model is: 

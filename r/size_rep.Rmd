@@ -132,7 +132,7 @@ anova(lmm.0,lmm.3)
 
 Further, we use an automatic, step-backward procedure from the package
 lmerTest starting from a model that includes all second order fixed
-factor intereactions to understand which second order interactions are likely to be relevant.
+factor intereactions to understand which second order interactions are likely to be relevant. Including all second order interactions in an exhaustive search turned out to be computationally too demanding.
 
 
 ```{r mixedmodels4, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
