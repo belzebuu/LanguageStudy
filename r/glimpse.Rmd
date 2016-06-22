@@ -57,7 +57,7 @@ We plot a generalized pairs plot, that is a scatter plot for every pair of varia
 }
 
 ```{r dataoverview3, eval=TRUE, echo=FALSE, fig.height=10, fig.width=10, warning=FALSE}
-DF<-rbind(data.frame(Orientation,case="L1 German\n (Orientation)"),data.frame(Size,case="L1 Spanish\n (Size)"))
+DF<-rbind(data.frame(Orientation,case="L2 German\n (Orientation)"),data.frame(Size,case="L2 Spanish\n (Size)"))
 #ggscatmat(select(DF,Pre,Post,LeaYrs,DUH,AECI,Time,case),
 #        columns=c("Pre","Post","LeaYrs","DUH","AECI","Time"),
 #                    #columns = 2:4, 
