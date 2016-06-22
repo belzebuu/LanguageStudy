@@ -245,9 +245,8 @@ div.tocify {
 ## 3     L1      0                  13
 ## 4     L1      1                  17</code></pre>
 <p>We set up a categorical variable, <code>Lang</code>, to inform about the speakers L1 and L2 and a another categorical variable, <code>Type</code>, to inform about the Type of question MATCH and MISMATCH. Each different question is identified by the variable <code>Trial</code> that we treat as a categorical variable as well, since we assume no influence of the order in which the question was posed. Finally, we record in the variable <code>List</code> the list from which the question is drawn, that is, list A or list B. The response variable is reaction time measured in milliseconds.</p>
-<p>We are not intersted in the effect of the specific questions nor in those of the specific subjects. However, we are are interested in knowing whether these variables are important for the variance of responses. Hence, we specify a mixed effects model with random effects associated to the subjects and to the question order and with fixed effects associated with <code>Type</code> and <code>Lang</code>.</p>
-<p>In the experiment, we assigned randomly subjects to the two lists. Then we drew 8 questions per each Type (matched/mismatched) from each list. Hence question <code>order</code> is nested within <code>Type</code> and <code>List</code> and subjects (<code>Subject</code>) are nested within <code>List</code>. Within the list nesting subjects and questions are fully crossed. We fitted our model in R using the package <code>lme4</code> [add reference].</p>
-<p>We log-transformed the response variable as diagnostic plots (conditional and marginal residuals and qqplot) improved considerably. A Gamma family transformation with log link function yield much worse diagnostic plots. The distribution of reaction times is right skewed and never reaches zero. Hence, logarithm transformation or generalized linear mixed models with Gamma family and log link function are commonly choice.</p>
+<p>We are not intersted in the effect of the specific trials or the specific subjects. However, we are interested in knowing whether these effects are important for the variance of responses. Hence, we specify a mixed effects model with random effects associated to the factors Trial and Subject and fixed effects associated with the other factors. Due to the fact that we split trials between two lists and administered the two lists to different subjects the random effects of Trial and Subject are nested within List. Further, for the way we split trials, Trial is nested also within Type. Within the nesting structure subjects and questions are fully crossed. We fitted our model in R using the package <code>lme4</code> [add reference].</p>
+<p>The distribution of reaction times is right skewed and never reaches zero. Under these conditions, logarithm transformation or generalized linear mixed models with Gamma family and log link function are common approaches to meet the assumptions underlying mixed linear models. In our case, we found that a log-transformed response variable imporved considerably the diagnostic plots (conditional and marginal residual qqplots) of the selected models. A Gamma family transformation with log link function yield much worse diagnostic plots.</p>
 <p>Our starting model is: <code>lmer(log(Time) ~ Type + List + Lang + (1 | List:Subject) + (1 | List:Type:Trial), data = DLM)</code></p>
 <p>The random effects are significant. This is also supported by the portion of standard deviation of the residuals that is imputable to the two random effects.</p>
 <pre class="r"><code>lmm&lt;- lmer(log(Time) ~ Type + Lang + List + (1 | List:Subject)+ (1 | List:Type:Trial), data = DLM, REML=FALSE)</code></pre>
@@ -287,8 +286,6 @@ anova(lmm.2,lmm.3)</code></pre>
 ##       Df  AIC  BIC logLik deviance Chisq Chi Df Pr(&gt;Chisq)
 ## lmm.2  5 2286 2314  -1138     2276                        
 ## lmm.3  7 2290 2329  -1138     2276  0.24      2       0.89</code></pre>
-<p>We observe that the two random effects, subjects and questions, account for a good portion of the standard deviation of the residuals: 0.2569, 0.1553, 0.3839 respectively. The model is translated by means of a significant intercept. The estimated effects are in the transformed scale.</p>
-<p>Note that due to the removal of entries with missing values, our experimental set up is not balanced. Hence, we do not report p-values for F or t statistics as there are no analytical results for null distributions of parameter estimates in complex situations (e.g., unbalanced or partially crossed designs) <span class="citation">[cite Bates @Article{, title = {Fitting Linear Mixed-Effects Models Using {lme4}}, author = {Douglas Bates and Martin M{\&quot;a}chler and Ben Bolker and Steve Walker}, journal = {Journal of Statistical Software}, year = {2015}, volume = {67}, number = {1}, pages = {1--48}, doi = {10.18637/jss.v067.i01}, }]</span>. The likelihood ratio test for each individual factors results non significant at a level of 0.05 for the <code>Type</code> (0.8815) and for the interaction <code>Type:Lang</code> (0.3291). The other fixed and random effects are all significant. The package lmerTest makes availbale an analysis of variance of Type III with Satterthwaite approximation for degrees of freedom and a backward elimination of non-significant effects. Both these two procedures confirm our results that <code>Type</code> and <code>Type:Lang</code> are not significant.</p>
 </div>
 <div id="exhaustive-search" class="section level2">
 <h2>Exhaustive search</h2>
@@ -334,6 +331,55 @@ anova(lmm)</code></pre>
 ## Lang   5.84    5.84     1   143      38 6.9e-09 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
+<!-- html table generated in R 3.2.3 by xtable 1.8-2 package -->
+<!-- Thu Jun 23 00:45:00 2016 -->
+<table border="1">
+<tr>
+<th>
+</th>
+<th>
+Sum Sq
+</th>
+<th>
+Mean Sq
+</th>
+<th>
+NumDF
+</th>
+<th>
+DenDF
+</th>
+<th>
+F.value
+</th>
+<th>
+Pr(&gt;F)
+</th>
+</tr>
+<tr>
+<td>
+Lang
+</td>
+<td align="right">
+5.84
+</td>
+<td align="right">
+5.84
+</td>
+<td align="right">
+1.00
+</td>
+<td align="right">
+142.66
+</td>
+<td align="right">
+37.98
+</td>
+<td align="right">
+0.0000
+</td>
+</tr>
+</table>
 <pre class="r"><code>summary(lmm, transform=&quot;log&quot;)</code></pre>
 <pre><code>## Linear mixed model fit by maximum likelihood t-tests use
 ##   Satterthwaite approximations to degrees of freedom [lmerMod]
@@ -366,7 +412,9 @@ anova(lmm)</code></pre>
 ## Correlation of Fixed Effects:
 ##        (Intr)
 ## LangL1 -0.317</code></pre>
-<p>The statistical significance seem confirmed by boostrap confidence intervals:</p>
+<p>The statistical significance seems confirmed by boostrap confidence intervals:</p>
+<p>We observe that the two random effects, subjects and trials, account for a good portion of the standard deviation of the residuals: 0.2569, 0.1553, 0.3839 respectively. The model is translated by means of a significant intercept. The estimated effects are in the transformed scale.</p>
+<p>Note that due to the removal of entries with missing values, our experimental set up is not balanced. Hence, we do not report p-values for F or t statistics as there are no analytical results for null distributions of parameter estimates in complex situations (e.g., unbalanced or partially crossed designs) [Bates 2015]. The likelihood ratio test for each individual factors results non significant at a level of 0.05 for the <code>Type</code> (0.8815) and for the interaction <code>Type:Lang</code> (0.3291). The other fixed and random effects are all significant. The package lmerTest makes availbale an analysis of variance of Type III with Satterthwaite approximation for degrees of freedom and a backward elimination of non-significant effects. Both these two procedures confirm our results that <code>Type</code> and <code>Type:Lang</code> are not significant.</p>
 </div>
 <div id="conclusions" class="section level2">
 <h2>Conclusions</h2>
