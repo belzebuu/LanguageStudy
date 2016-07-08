@@ -172,8 +172,8 @@ require(lmerTest)
 anova(lmm)
 ```
 ```{r results='asis', echo=FALSE}
-library(xtable)
-print(xtable(anova(lmm)),type="html")
+# library(xtable)
+# print(xtable(anova(lmm)),type="html")
 ```
 
 

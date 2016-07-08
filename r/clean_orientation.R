@@ -92,6 +92,9 @@ names(OrientationL1L2)<-c("Subject","List","Trial","Time","Type","Lang")
 
 save(Orientation,OrientationL1L2,file="orientation.RData")
 
+write.csv(Orientation,file="OrientationL2_anonym.csv")
+write.csv(OrientationL1L2,file="OrientationL1vsL2_anonym.csv")
+
 
 
 

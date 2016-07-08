@@ -177,7 +177,7 @@ lmm.6<-lmer(log(Time) ~ Type + List + LeaYrs + Post + Pre + AECI + DUH + (1 | Li
 
 library(MuMIn)
 dredge.res<-dredge(lmm.6, beta = c("none"), evaluate = TRUE, rank = "AICc", fixed = NULL, m.lim = NULL,  trace = FALSE)
-#print(dredge.res)
+print(dredge.res[1:5,])
 attr(dredge.res, "model.calls")[1]
 ```
 

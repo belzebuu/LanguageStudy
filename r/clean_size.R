@@ -95,3 +95,5 @@ names(SizeL1L2)<-c("Subject","List","Trial","Time","Type","Lang")
 
 save(Size,SizeL1L2,file="size.RData")
 
+write.csv(Size,file="SizeL2_anonym.csv")
+write.csv(SizeL1L2,file="SizeL1L2_anonym.csv")
