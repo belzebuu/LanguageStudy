@@ -179,7 +179,7 @@ print(xtable(anova(lmm)),type="html")
 
 ```{r sum}
 summary(lmm, transform="log")
-print(summary(lmm,transform="log"),type="html")
+print(xtable(summary(lmm,transform="log")),type="html")
 ```
 
 The statistical significance seems confirmed by boostrap confidence intervals:

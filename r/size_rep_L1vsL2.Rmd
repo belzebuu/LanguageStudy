@@ -119,7 +119,7 @@ The final model on which we base our exhaustive search is:
 
 ```{r fitmodel, echo=TRUE}
 require(lmerTest)
-lmm <- lmer(formula = log(Time) ~ Lang + Type + Lang:Type + (1 | List:Subject) + 
+lmm <- lmer(formula = log(Time) ~ Lang + Type + (1 | List:Subject) + 
     (1 | List:Type:Trial), data = DLM, REML = FALSE)
 ```
 
@@ -140,7 +140,7 @@ res <- residuals(lmm, Type = "response")
 qqnorm(res, main = "Conditional residuals, QQplot")
 qqline(res)
 
-lm.0 <- lm(log(Time) ~ Type + Lang + Lang:Type, data = DLM)
+lm.0 <- lm(log(Time) ~ Type + Lang, data = DLM)
 x <- model.matrix(lm.0)
 pred <- x %*% fixef(lmm)
 res <- DLM$Time - pred
@@ -216,8 +216,9 @@ plot(effects::Effect(c("Type"), lmm, transformation=list(link=log, inverse=exp))
      bg="grey50",fg="black",alternating=FALSE,
      par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black"))
 
-plot(effects::Effect(c("Lang", "Type"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
-#plot(effects::Effect(c("Type", "Lang"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",xlab="Speakers",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
+# plot(effects::Effect(c("Lang", "Type"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
+# 
+# plot(effects::Effect(c("Type", "Lang"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",xlab="Speakers",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
 ```
 
 
