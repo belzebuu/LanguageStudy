@@ -9,13 +9,14 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE,dev='jpeg')
-options(formatR.arrow=TRUE, width=80, digits=5,show.signif.stars = TRUE)
+knitr::opts_chunk$set(echo = TRUE,dev='jpeg',warning=FALSE,message=FALSE, comment="",size="small")
+options(formatR.arrow=TRUE, width=100, digits=3,show.signif.stars = TRUE)
 library(ggplot2)
 library(dplyr)
 library(lme4)
 #library(lmerTest)
 #library(lmtest)
+#library(merTools)
 library(stringr)
 library(latticeExtra)
 ```
@@ -55,6 +56,8 @@ print(num)
 glimpse(DLM)
 ```
 
+## Model Building
+
 We set up a categorical variable, `Lang`, to inform about the speakers L1 and L2 and a another categorical variable, `Type`, to inform about the Type of question MATCH and MISMATCH. Each different question is identified by the variable `Trial` that we treat as a categorical variable as well, since we assume no influence of the order in which the question was posed. Finally, we record in the variable `List` the list from which the question is drawn, that is, list A or list B. The response variable is reaction time measured in milliseconds.
 
 We are not intersted in the effect of the specific trials or the specific subjects. However, we are interested in knowing whether these effects are important for the variance of responses. Hence, we specify a mixed effects model with random effects associated to the factors Trial and  Subject and fixed effects associated with the other factors. Due to the fact that we split trials between two lists and administered the two lists to different subjects the random effects of  Trial and  Subject are nested within List. Further, for the way we split trials, Trial is nested also within Type. Within the nesting structure subjects and questions are fully crossed. We fitted our model in R using the package `lme4` [add reference].
@@ -86,7 +89,9 @@ anova(lmm.5,lmm)
 ```
 
 
-## Likelihood ratio tests for main fixed effects
+### Likelihood ratio
+
+We gain preliminary insight using likelihood ratio tests for main fixed effects: 
 
 ```{r mixedmodels2, warning=FALSE}
 lmm.0 <- lmer(log(Time) ~ (1 | List:Subject)+ (1 | List:Type:Trial), data = DLM)
@@ -111,8 +116,16 @@ lmm.6<-lmer(log(Time) ~ (Type + List + Lang)^2 + (1 | List:Subject) + (1 | List:
 
 library(MuMIn)
 dredge.res<-dredge(lmm.6, beta = c("none"), evaluate = TRUE, rank = "AICc", fixed = NULL, m.lim = NULL,  trace = FALSE)
-#print(dredge.res)
+print(dredge.res[1:5,])
 attr(dredge.res, "model.calls")[1]
+```
+
+
+Or in a pretty table form:
+
+```{r prettytable, echo=FALSE, results='asis'}
+require(xtable)
+print(xtable(dredge.res[1:5,]),type="html")
 ```
 
 
@@ -172,15 +185,22 @@ require(lmerTest)
 anova(lmm)
 ```
 ```{r results='asis', echo=FALSE}
-library(xtable)
-print(xtable(anova(lmm)),type="html")
+#library(xtable)
+#print(xtable(anova(lmm)),type="html")
 ```
 
+and the effects with the t test:
 
 ```{r sum}
 summary(lmm, transform="log")
-print(xtable(summary(lmm,transform="log")),type="html")
 ```
+
+
+We observe that the two random effects, subjects and trials, account for a good portion of the standard deviation of the residuals: 0.2569, 0.1553, 0.3839 respectively. The model is translated by means of a significant intercept. The estimated effects are in the transformed scale.
+
+Note that due to the removal of entries with missing values, our experimental set up is not balanced. Hence, it is controversial to report p-values for F or t statistics as there are no analytical results for null distributions of parameter estimates in complex situations (e.g., unbalanced or partially crossed designs) [Bates 2015].
+The likelihood ratio test for each individual factors results non significant at a level of 0.05 for the `Type` (0.8815) and for the interaction `Type:Lang` (0.3291). The other fixed and random effects are all significant. The package lmerTest makes availbale an analysis of variance of Type III  with  Satterthwaite 
+approximation for degrees of freedom and a backward elimination of non-significant effects. Both these two procedures confirm our results that  `Type` and `Type:Lang` are not significant.
 
 The statistical significance seems confirmed by boostrap confidence intervals:
 ```{r confintstd, echo=FALSE, eval=FALSE}
@@ -189,11 +209,16 @@ confint(lmm,method="boot")
 ```
 
 
-We observe that the two random effects, subjects and trials, account for a good portion of the standard deviation of the residuals: 0.2569, 0.1553, 0.3839 respectively. The model is translated by means of a significant intercept. The estimated effects are in the transformed scale.
 
-Note that due to the removal of entries with missing values, our experimental set up is not balanced. Hence, we do not report p-values for F or t statistics as there are no analytical results for null distributions of parameter estimates in complex situations (e.g., unbalanced or partially crossed designs) [Bates 2015].
-The likelihood ratio test for each individual factors results non significant at a level of 0.05 for the `Type` (0.8815) and for the interaction `Type:Lang` (0.3291). The other fixed and random effects are all significant. The package lmerTest makes availbale an analysis of variance of Type III  with  Satterthwaite 
-approximation for degrees of freedom and a backward elimination of non-significant effects. Both these two procedures confirm our results that  `Type` and `Type:Lang` are not significant.
+We also include the analysis via `merTools` package that calculates simulated values of the (fixed and random) effects from the posterior using the function `arm::sim`:
+```{r simulconfint, height=6, width=4, echo=TRUE}
+detach("package:lmerTest",unload=TRUE)
+require(merTools)
+lmm <- lmer(formula = log(Time) ~ Lang + (1 | List:Subject) + 
+    (1 | List:Type:Trial), data = DLM, REML = FALSE)
+plotREsim(REsim(lmm, n.sims= 100), level=0.95, stat="mean")
+plotFEsim(FEsim(lmm, n.sims = 100), level = 0.95, stat = 'mean', intercept = FALSE)
+```
 
 
 ## Conclusions
@@ -211,10 +236,6 @@ source("lib.R")
 #randeff.plot(lmm,"Subject")
 #randeff.plot(lmm,"Type:List:Type:Trial")
 randeff.plot2(lmm)
-```
-
-```{r fixedeff, height=6, width=4, echo=FALSE}
-#plotFEsim(FEsim(lmm, n.sims = 100), level = 0.9, stat = 'median', intercept = FALSE)
 ```
 
 

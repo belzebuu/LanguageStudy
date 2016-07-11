@@ -22,8 +22,8 @@ DUH
 -->
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, dev='jpeg')
-options(formatR.arrow=TRUE, width=100, digits=5,show.signif.stars = TRUE)
+knitr::opts_chunk$set(echo = TRUE, dev='jpeg',warning=FALSE,message=FALSE, comment="",size="small")
+options(formatR.arrow=TRUE, width=100, digits=3,show.signif.stars = TRUE)
 library(ggplot2)
 library(dplyr)
 library(lme4)
@@ -73,7 +73,7 @@ glimpse(DLM)
 ```
 
 
-
+# Model Building
 <!--We removed the subjects that had `Post` or `Post2` smaller than 75%. -->
 
 We consider the following independent variables:
@@ -120,7 +120,8 @@ anova(lmm.5,lmm)
 
 We then consider which fixed effects to include in the model.
 
-## Heuristic Search
+
+### Heuristic Search
 
 We use a  manual, step-forward procedure with likelihood ratio test to prepare an initial model for exhaustive search.
 
@@ -170,7 +171,7 @@ ft
 Looking at the output produced above we see which second order terms had more chances to be included in the model. We include as many of those second order terms as we can while keeping an exhaustive search feasible. 
 
 
-## Exhaustive search
+### Exhaustive search
 
 Using the insight from the previous analysis we construct an initial model to search exhaustively.
 
@@ -183,6 +184,14 @@ library(MuMIn)
 dredge.res<-dredge(lmm.6, beta = c("none"), evaluate = TRUE, rank = "AICc", fixed = NULL, m.lim = NULL,  trace = FALSE)
 print(dredge.res[1:5,])
 attr(dredge.res, "model.calls")[1]
+```
+
+
+Or in a pretty table form:
+
+```{r prettytable, echo=FALSE, results='asis'}
+require(xtable)
+print(xtable(dredge.res[1:5,]),type="html")
 ```
 
 
@@ -244,6 +253,9 @@ Anova of type III with Satterwhite Approximation:
 ```{r anova}
 require(lmerTest)
 anova(lmm)
+```
+and the effects with the t test:
+```{r ttest}
 summary(lmm)
 ```
 
@@ -254,6 +266,17 @@ Bootstrap confidence intervals:
 confint(lmm,method="boot")
 ```
 
+
+We also include the analysis via `merTools` package that calculates simulated values of the (fixed and random) effects from the posterior using the function `arm::sim`:
+```{r simulconfint, height=6, width=4, echo=TRUE}
+detach("package:lmerTest",unload=TRUE)
+require(merTools)
+lmm <- lmer(formula = log(Time) ~ AECI + LeaYrs + List + Post + Pre + 
+    Type + (1 | List:Subject) + (1 | List:Type:Trial) + AECI:Pre + 
+    LeaYrs:List + List:Type + Post:Pre, data = DLM, REML = FALSE)
+plotREsim(REsim(lmm, n.sims= 100), level=0.95, stat="mean")
+plotFEsim(FEsim(lmm, n.sims = 100), level = 0.95, stat = 'mean', intercept = FALSE)
+```
 
 ## Conclusions
 
