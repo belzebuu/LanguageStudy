@@ -1,13 +1,11 @@
 ---
 title: 'Orientation: L2'
 output:
-  word_document:
-    toc: yes
   html_document:
-    toc: yes
+    toc: true
     toc_float:
-      collapsed: no
-      smooth_scroll: no
+      collapsed: false
+      smooth_scroll: false
 ---
 
 <!--
