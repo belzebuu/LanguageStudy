@@ -10,7 +10,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE,dev='jpeg')
-options(formatR.arrow=TRUE, width=100, digits=5,show.signif.stars = TRUE)
+options(formatR.arrow=TRUE, width=120, digits=5,show.signif.stars = TRUE)
 library(ggplot2)
 library(party)
 library(dplyr)
@@ -20,6 +20,8 @@ library(lme4)
 library(stringr)
 #library(merTools)
 library(latticeExtra)
+library(xtable)
+library(interplot)
 ```
 
 
@@ -155,6 +157,7 @@ lmm.6<-lmer(log(Time) ~ Type + List + LeaYrs + Post + Pre + AECI + DUH + (1 | Li
 library(MuMIn)
 dredge.res<-dredge(lmm.6, beta = c("none"), evaluate = TRUE, rank = "AICc", fixed = NULL, m.lim = NULL,  trace = FALSE)
 print(dredge.res[1:5,])
+print(xtable(dredge.res[1:5,]),type="html")
 attr(dredge.res, "model.calls")[1]
 ```
 
@@ -299,7 +302,6 @@ The last plot shows the histogram of entries with respect to the `Pre` value. Th
 Plot of the coefficient estimates of one variable conditional on the values of the other variable in the interaction term.
 
 ```{r interplot, height=4, width=6, echo=FALSE}
-library(interplot)
 interplot(m = lmm, var1 = "Post", var2 = "Pre",hist=TRUE)+xlab("Pre")+ylab("Post")
 ```
 

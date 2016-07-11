@@ -10,7 +10,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE,dev='jpeg')
-options(formatR.arrow=TRUE, width=68, digits=5,show.signif.stars = TRUE)
+options(formatR.arrow=TRUE, width=80, digits=5,show.signif.stars = TRUE)
 library(ggplot2)
 library(dplyr)
 library(lme4)
@@ -172,13 +172,14 @@ require(lmerTest)
 anova(lmm)
 ```
 ```{r results='asis', echo=FALSE}
-# library(xtable)
-# print(xtable(anova(lmm)),type="html")
+library(xtable)
+print(xtable(anova(lmm)),type="html")
 ```
 
 
 ```{r sum}
 summary(lmm, transform="log")
+print(summary(lmm,transform="log"),type="html")
 ```
 
 The statistical significance seems confirmed by boostrap confidence intervals:

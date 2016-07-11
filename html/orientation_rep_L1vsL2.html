@@ -332,7 +332,7 @@ anova(lmm)</code></pre>
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
 <!-- html table generated in R 3.2.3 by xtable 1.8-2 package -->
-<!-- Thu Jun 23 00:45:00 2016 -->
+<!-- Mon Jul 11 10:07:37 2016 -->
 <table border="1">
 <tr>
 <th>
@@ -381,10 +381,9 @@ Lang
 </tr>
 </table>
 <pre class="r"><code>summary(lmm, transform=&quot;log&quot;)</code></pre>
-<pre><code>## Linear mixed model fit by maximum likelihood t-tests use
-##   Satterthwaite approximations to degrees of freedom [lmerMod]
-## Formula: 
-## log(Time) ~ Lang + (1 | List:Subject) + (1 | List:Type:Trial)
+<pre><code>## Linear mixed model fit by maximum likelihood t-tests use Satterthwaite
+##   approximations to degrees of freedom [lmerMod]
+## Formula: log(Time) ~ Lang + (1 | List:Subject) + (1 | List:Type:Trial)
 ##    Data: DLM
 ## 
 ##      AIC      BIC   logLik deviance df.resid 
@@ -399,8 +398,37 @@ Lang
 ##  List:Subject    (Intercept) 0.0648   0.255   
 ##  List:Type:Trial (Intercept) 0.0231   0.152   
 ##  Residual                    0.1537   0.392   
-## Number of obs: 1993, groups:  
-## List:Subject, 152; List:Type:Trial, 32
+## Number of obs: 1993, groups:  List:Subject, 152; List:Type:Trial, 32
+## 
+## Fixed effects:
+##             Estimate Std. Error       df t value Pr(&gt;|t|)    
+## (Intercept)   6.8546     0.0371  80.5000  184.87  &lt; 2e-16 ***
+## LangL1       -0.3467     0.0563 142.7000   -6.16  6.9e-09 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Correlation of Fixed Effects:
+##        (Intr)
+## LangL1 -0.317</code></pre>
+<pre class="r"><code>print(summary(lmm,transform=&quot;log&quot;),type=&quot;html&quot;)</code></pre>
+<pre><code>## Linear mixed model fit by maximum likelihood t-tests use Satterthwaite
+##   approximations to degrees of freedom [lmerMod]
+## Formula: log(Time) ~ Lang + (1 | List:Subject) + (1 | List:Type:Trial)
+##    Data: DLM
+## 
+##      AIC      BIC   logLik deviance df.resid 
+##     2286     2314    -1138     2276     1988 
+## 
+## Scaled residuals: 
+##    Min     1Q Median     3Q    Max 
+## -3.480 -0.653 -0.098  0.543  3.032 
+## 
+## Random effects:
+##  Groups          Name        Variance Std.Dev.
+##  List:Subject    (Intercept) 0.0648   0.255   
+##  List:Type:Trial (Intercept) 0.0231   0.152   
+##  Residual                    0.1537   0.392   
+## Number of obs: 1993, groups:  List:Subject, 152; List:Type:Trial, 32
 ## 
 ## Fixed effects:
 ##             Estimate Std. Error       df t value Pr(&gt;|t|)    

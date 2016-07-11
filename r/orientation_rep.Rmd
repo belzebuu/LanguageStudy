@@ -1,11 +1,13 @@
 ---
 title: 'Orientation: L2'
 output:
+  word_document:
+    toc: yes
   html_document:
-    toc: true
+    toc: yes
     toc_float:
-      collapsed: false
-      smooth_scroll: false
+      collapsed: no
+      smooth_scroll: no
 ---
 
 <!--
@@ -30,6 +32,8 @@ library(lme4)
 library(stringr)
 #library(merTools)
 library(latticeExtra)
+# library(xtable)
+library(interplot)
 ```
 
 ## Data analysis
@@ -322,7 +326,6 @@ The last plot shows the histogram of entries with respect to the `Pre` value. Th
 Plot of the coefficient estimates of one variable conditional on the values of the other variable in the interaction term.
 
 ```{r interplot, height=4, width=6, echo=FALSE}
-library(interplot)
 interplot(m = lmm, var1 = "Post", var2 = "Pre",hist=TRUE)+xlab("Pre")+ylab("Post")
 ```
 
