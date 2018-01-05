@@ -1,0 +1,219 @@
+---
+title: 'Size: L1 vs L2'
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,dev='jpeg',warning=FALSE,message=FALSE, comment="",size="small")
+options(formatR.arrow=TRUE, width=100, digits=3,show.signif.stars = TRUE)
+library(ggplot2)
+#library(party)
+library(dplyr)
+library(lme4)
+#library(lmerTest)
+#library(lmtest)
+library(stringr)
+#library(merTools)
+library(latticeExtra)
+```
+
+## Data analysis
+
+
+```{r data, echo=FALSE}
+load("size.RData")
+DLM<-SizeL1L2
+
+num<-DLM %>% group_by(Lang,List) %>% summarize(n_distinct(Subject))
+```
+
+We have `r as.numeric(num[2,2])` subjects for L1 and `r as.numeric(num[1,2])` for L2 for a total of  `r dim(DLM)[1]` observations. The subjects are distributed as follows:
+
+```{r echo=FALSE, results=TRUE}
+print(num)
+```
+
+```{r naomit, echo=FALSE}
+DLM<-na.omit(DLM)
+DLM$Subject<-factor(DLM$Subject)
+num<-DLM %>% group_by(Lang,List) %>% summarize(n_distinct(Subject))
+```
+
+After removal of entries with missing data due to wrong answers, we have `r as.numeric(num[2,2])` subjects for L1 and `r as.numeric(num[1,2])` subjects for L2 for a total of `r dim(DLM)[1]` observations left. The subjects are distributed as follows:
+
+```{r echo=FALSE, results=TRUE}
+print(num)
+```
+
+
+```{r dataoverview, eval=FALSE, echo=FALSE}
+# Let's have a glimpse at the data:
+# tbl_df(DLM)
+glimpse(DLM)
+```
+
+## Model Building
+
+See the Orientation L1 vs L2 case for a description of the setup.
+
+Our starting model is: 
+`lmer(log(Time) ~ Type + List + Lang + (1 | List:Subject) + (1 | List:Type:Trial), data = DLM)`
+
+The random effects are significant. This is also supported by the portion of standard deviation of the residuals that is imputable to the two random effects. 
+
+```{r basicmodel, warning=TRUE}
+lmm<- lmer(log(Time) ~ Type + Lang + List + (1 | List:Subject)+ (1 | List:Type:Trial), data = DLM, REML=FALSE)
+```
+
+
+```{r randomeffectslrt, warning=FALSE, eval=FALSE, echo=FALSE}
+lm.0 <- lm(log(Time) ~ 1, data = DLM)
+# LeaYrs AECI AMGE
+lmm.0 <- lmer(log(Time) ~ (1 | List:Subject)+ (1 | List:Subject:Trial), data = DLM)
+AIC(lm.0,lmm.0)
+
+lmm.4 <- update(lmm,.~.-(1 | List:Subject))
+anova(lmm.4,lmm)
+
+lmm.5 <- update(lmm,.~.-(1 | List:Type:Trial))
+anova(lmm.5,lmm)
+```
+
+
+### Likelihood ratio
+
+We gain a preliminary insight using likelihood ratio tests for main fixed effects: 
+
+```{r mixedmodels2, warning=FALSE}
+lmm.0 <- lmer(log(Time) ~ (1 | List:Subject)+ (1 | List:Type:Trial), data = DLM)
+lmm.1 <- update(lmm.0, .~. + Type)
+anova(lmm.0,lmm.1)
+
+lmm.2 <- update(lmm.0, .~. + Lang)
+anova(lmm.1,lmm.2)
+
+lmm.3 <- update(lmm, .~. + List)
+anova(lmm.2,lmm.3)
+```
+
+We see that `Type` and `Lang` are significant. We use exhaustive search to find out which second order term to include.
+
+
+
+The final model on which we base our exhaustive search is:
+
+```{r fitmodel, echo=TRUE}
+require(lmerTest)
+lmm<- lmer(log(Time) ~ Type + Lang + List + (1 | List:Subject)+ (1 | List:Type:Trial), data = DLM, REML=FALSE)
+```
+
+See below, in the Anova section, the summary of this model.
+
+
+## Diagnostic plots
+
+```{r plotlmr, fig.height=8}
+#lmm<- glmer(Time ~ Lang + Type + (1 | Subject)+ (1 | Type:List:Type:Trial), data = DLM,family=Gamma(link = "identity"))
+par(mfrow=c(2,2))
+# plot(lm4,which=1:4)
+
+plot(fitted(lmm, Type = "response"), residuals(lmm, Type = "response"),
+     main = "Conditional residuals", xlab = "Predicted", ylab = "Residuals")
+
+res <- residuals(lmm, Type = "response")
+qqnorm(res, main = "Conditional residuals, QQplot")
+qqline(res)
+
+lm.0 <- lm(log(Time) ~ Type + Lang, data = DLM)
+x <- model.matrix(lm.0)
+### pred <- x %*% fixef(lmm)
+### res <- DLM$Time - pred
+### plot(pred, res, main = "Marginal residuals", xlab = "Predicted", ylab = "Residuals")
+### qqnorm(res, main = "Marginal residuals, QQplot")
+### qqline(res)
+
+```
+
+```{r plot1, fig.width=3, echo=FALSE, eval=FALSE}
+plot(lmm,Type=c("p","smooth"))
+plot(lmm,sqrt(abs(resid(.))) ~ fitted(.), Type=c("p","smooth"))
+qqmath(lmm,id=0.005)
+# package HLMdiag influence.ME
+```
+
+
+The joint qqplot looks normal. The marginal looks less nice. 
+
+
+
+
+## p-values
+
+Anova of type III with Satterwhite Approximation:
+
+```{r anova, message=FALSE, warning=FALSE}
+require(lmerTest)
+anova(lmm)
+```
+
+and the effects with t test:
+```{r sum}
+summary(lmm)
+```
+
+
+Bootstrap confidence intervals
+
+```{r confintstd, eval=TRUE, echo=TRUE}
+#confint(lmm,method="Wald")
+confint(lmm,method="boot")
+```
+
+We also include the analysis via `merTools` package that calculates simulated values of the (fixed and random) effects from the posterior using the function `arm::sim`:
+```{r simulconfint, height=6, width=4, echo=TRUE}
+### detach("package:lmerTest",unload=TRUE)
+### require(merTools)
+### lmm <- lmer(formula = log(Time) ~ Lang + Type + (1 | List:Subject) + 
+###     (1 | List:Type:Trial), data = DLM, REML = FALSE)
+### plotREsim(REsim(lmm, n.sims= 100), level=0.95, stat="mean")
+### plotFEsim(FEsim(lmm, n.sims = 100), level = 0.95, stat = 'mean', intercept = FALSE)
+```
+
+## Conclusions
+
+The figures report the random and fixed effects. As above, fixed effects are tranformed back in the original linear scale of milliseconds. 
+We can conclude that L1 speakers have shorter reaction times than L2 speakers under both experimental conditions of MATCH and MISMATCH questions. In addtion, MISMATCH questions seem slightly more difficult to be answered. This effect was shown to be significant from a bootstrap analysis on the transformed data.
+
+```{r randomeff, height=6, width=4, echo=FALSE}
+#plotREsim(REsim(lmm, n.sims = 100), stat = 'median', sd = TRUE)
+source("lib.R")
+#randeff.plot(lmm,"Subject")
+#randeff.plot(lmm,"Type:List:Type:Trial")
+randeff.plot2(lmm)
+```
+
+
+
+```{r fixedplot, height=4, width=5, echo=FALSE}
+
+### plot(effects::Effect(c("Lang"), lmm, transformation=list(link=log, inverse=exp)),
+### 
+### 
+### ))
+### 
+### 
+### 
+### 
+### ))
+
+#plot(effects::Effect(c("Lang", "Type"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
+#plot(effects::Effect(c("Type", "Lang"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",xlab="Speakers",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
+```
+
+
+
