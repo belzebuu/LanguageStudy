@@ -46,9 +46,9 @@ DLM$Subject<-factor(DLM$Subject)
 num<-DLM %>% group_by(LangLev,List) %>% summarize(n_distinct(Subject))
 ```
 
-After removal of entries with missing data due to wrong answers, we have
-`r as.numeric(num[2,2])` subjects for L1 and `r as.numeric(num[1,2])`
-subjects for L2 for a total of `r dim(DLM)[1]` observations left. The
+After removal of entries with missing data due to wrong answers, 
+we have `r sum(num[,3])` subjects in total
+and `r dim(DLM)[1]` observations left. The
 subjects are distributed as follows:
 
 ```{r echo=FALSE, results=TRUE}
