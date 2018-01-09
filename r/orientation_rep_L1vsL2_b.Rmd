@@ -28,10 +28,11 @@ library(latticeExtra)
 load("orientation.RData")
 DLM<-OrientationL1L2
 
-num<-DLM %>% group_by(Lang,List) %>% summarize(n_distinct(Subject))
+num<-DLM %>% group_by(LangLev,List) %>% summarize(n_distinct(Subject))
 ```
 
-We have `r sum(num[,3])` subjects in total and `r dim(DLM)[1]` observations. The subjects are distributed as follows:
+We have `r sum(num[,3])` subjects in total and `r dim(DLM)[1]`
+observations. The subjects are distributed as follows:
 
 ```{r echo=FALSE, results=TRUE}
 print(num)
@@ -40,10 +41,12 @@ print(num)
 ```{r naomit, echo=FALSE}
 DLM<-na.omit(DLM)
 DLM$Subject<-factor(DLM$Subject)
-num<-DLM %>% group_by(Lang,List) %>% summarize(n_distinct(Subject))
+num<-DLM %>% group_by(LangLev,List) %>% summarize(n_distinct(Subject))
 ```
 
-After removal of entries with missing data due to wrong answers, we have `r sum(num[,3])` subjects in total and `r dim(DLM)[1]` observations left. The subjects are distributed as follows:
+After removal of entries with missing data due to wrong answers, we have
+`r sum(num[,3])` subjects in total and `r dim(DLM)[1]` observations
+left. The subjects are distributed as follows:
 
 
 ```{r echo=FALSE, results=TRUE}
@@ -58,24 +61,55 @@ glimpse(DLM)
 
 ## Model Building
 
-We set up a categorical variable, `Lang`, to inform about the speakers L1 and L2 and a another categorical variable, `Type`, to inform about the Type of question MATCH and MISMATCH. Each different question is identified by the variable `Trial` that we treat as a categorical variable as well, since we assume no influence of the order in which the question was posed. Finally, we record in the variable `List` the list from which the question is drawn, that is, list A or list B. The response variable is reaction time measured in milliseconds.
+We set up a categorical variable, `LangLev`, to inform about the
+speakers L1 and L2 and a another categorical variable, `Type`, to inform
+about the `Type` of question MATCH and MISMATCH. Further, each different
+question is identified by the variable `Trial` that we treat also as a
+categorical variable, since we assume no influence of the order in which
+the question was posed. We record in the variable `List` the list from
+which the question is drawn, that is, list A or list B.  The response
+variable is reaction time measured in milliseconds.
 
-We are not intersted in the effect of the specific trials or the specific subjects. However, we are interested in knowing whether these effects are important for the variance of responses. Hence, we specify a mixed effects model with random effects associated to the factors Trial and  Subject and fixed effects associated with the other factors. Due to the fact that we split trials between two lists and administered the two lists to different subjects the random effects of  Trial and  Subject are nested within List. Further, for the way we split trials, Trial is nested also within Type. Within the nesting structure subjects and questions are fully crossed. We fitted our model in R using the package `lme4` [add reference].
+We are not intersted in the effect of the specific trials or the
+specific subjects. However, we are interested in knowing whether these
+effects are important for the variance of responses. Hence, we specify a
+mixed effects model with *random effects* associated to the factors
+`Trial` and `Subject` and *fixed effects* associated with the other
+factors. Due to the fact that we split trials between two lists and
+administered the two lists to different subjects the random effects of
+`Trial` and `Subject` are nested within `List`. Further, for the way we
+split trials, `Trial` is nested also within `Type`. Within the nesting
+structure subjects and questions are fully crossed. We fit our model in
+R using the package `lme4`
+[Douglas Bates, Martin Maechler, Ben Bolker, Steve Walker (2015). Fitting Linear Mixed-Effects Models Using lme4. Journal of Statistical Software, 67(1), 1-48. <doi:10.18637/jss.v067.i01>].
+As far as the fixed effects are concerned, we are interested in the
+fixed effects of `LangLev`, `Type` and their interaction. We expect no
+effect by `List` but we include it in the model to test our expectation.
 
-The distribution of reaction times is right skewed and never reaches zero. Under these conditions, logarithm transformation or generalized linear mixed models with Gamma family and log link function are common approaches to meet the assumptions underlying mixed linear models. In our case, we found that a log-transformed response variable imporved considerably the diagnostic plots (conditional and marginal residual qqplots) of the selected models. A Gamma family transformation with log link function yield much worse diagnostic plots. 
+
+The distribution of reaction times has longer tail on the right and never reaches
+zero. Under these conditions, logarithm transformation or generalized
+linear mixed models with Gamma family and log link function are common
+approaches to meet the assumptions underlying mixed linear models. In
+our case, we found that a log-transformed response variable improved
+considerably the diagnostic plots (conditional and marginal residual
+qqplots) of the selected models. A Gamma family transformation with log
+link function yield much worse diagnostic plots.
 
 
-Our starting model is: 
-`lmer(log(Time) ~ Type + List + Lang + (1 | List:Subject) + (1 | List:Type:Trial), data = DLM)`
-
-The random effects are significant. This is also supported by the portion of standard deviation of the residuals that is imputable to the two random effects. 
+Hence, considering the design explained above and the goals of this
+study we analyze the following model is: 
 
 ```{r basicmodel, warning=TRUE}
-lmm<- lmer(log(Time) ~ Type + Lang + List + (1 | List:Subject)+ (1 | List:Type:Trial), data = DLM, REML=FALSE)
+lmm<- lmer(log(Time) ~ Type + LangLev + List + Type:LangLev + (1 | List:Subject)+ (1 | List:Type:Trial),
+           data = DLM, REML=FALSE)
 ```
 
+## Likelihood Ratio Tests
 
-```{r randomeffectslrt, warning=FALSE, eval=FALSE, echo=FALSE}
+The random effects are significant. 
+
+```{r randomeffectslrt, warning=FALSE, eval=TRUE, echo=TRUE}
 lm.0 <- lm(log(Time) ~ 1, data = DLM)
 # LeaYrs AECI AMGE
 lmm.0 <- lmer(log(Time) ~ (1 | List:Subject)+ (1 | List:Subject:Trial), data = DLM)
@@ -88,76 +122,47 @@ lmm.5 <- update(lmm,.~.-(1 | List:Type:Trial))
 anova(lmm.5,lmm)
 ```
 
+As far as fixed effects are concerned, only `LangLev` is significant:
 
-### Likelihood ratio
-
-We gain preliminary insight using likelihood ratio tests for main fixed effects: 
-
-```{r mixedmodels2, warning=FALSE}
+```{r mixedmodels2, warning=FALSE, eval=TRUE, echo=TRUE}
 lmm.0 <- lmer(log(Time) ~ (1 | List:Subject)+ (1 | List:Type:Trial), data = DLM)
 lmm.1 <- update(lmm.0, .~. + Type)
 anova(lmm.0,lmm.1)
 
-lmm.2 <- update(lmm.0, .~. + Lang)
-anova(lmm.1,lmm.2)
+lmm.2 <- update(lmm.0, .~. + LangLev)
+anova(lmm.0,lmm.2)
 
-lmm.3 <- update(lmm, .~. + List)
-anova(lmm.2,lmm.3)
+lmm.3 <- update(lmm.0, .~. + Type:LangLev)
+anova(lmm.0,lmm.3)
+
+lmm.4 <- update(lmm.0, .~. + List)
+anova(lmm.0,lmm.4)
 ```
 
-
-The final model on which we base our exhaustive search is:
-
-```{r fitmodel, echo=TRUE}
-require(lmerTest)
-lmm<- lmer(formula = log(Time) ~ Type + Lang + List + (1 | List:Subject)+ (1 | List:Type:Trial), data = DLM, REML=FALSE)
-```
-
-See below, in the Anova section, the summary of this model.
+## Analysis of Variance
 
 
-
-## Diagnostic plots
-
-```{r plotlmr, fig.height=8, echo=FALSE}
-#lmm<- glmer(Time ~ Lang + Type + (1 | Subject)+ (1 | Type:List:Type:Trial), data = DLM,family=Gamma(link = "log"))
-par(mfrow=c(2,2))
-# plot(lm4,which=1:4)
-
-plot(fitted(lmm, Type = "response"), residuals(lmm, Type = "response"),
-     main = "Conditional residuals", xlab = "Predicted", ylab = "Residuals")
-
-res <- residuals(lmm, Type = "response")
-qqnorm(res, main = "Conditional residuals, QQplot")
-qqline(res)
-
-lm.0 <- lm(log(Time) ~  Lang, data = DLM)
-x <- model.matrix(lm.0)
-### pred <- x %*% fixef(lmm)
-### res <- DLM$Time - pred
-### plot(pred, res, main = "Marginal residuals", xlab = "Predicted", ylab = "Residuals")
-### qqnorm(res, main = "Marginal residuals, QQplot")
-### qqline(res)
-
-```
-
-```{r plot1, fig.width=3, echo=FALSE, eval=FALSE}
-plot(lmm,Type=c("p","smooth"))
-plot(lmm,sqrt(abs(resid(.))) ~ fitted(.), Type=c("p","smooth"))
-qqmath(lmm,id=0.005)
-# package HLMdiag influence.ME
-```
+In the following, we report the Anova of type III with Satterwhite
+approximation to take into account the different sizes of samples in the
+experimental units. We note that in the literature the use of this
+procedure is controversial, however, we observe here that the results
+confirm those of likelihood ratio tests.
 
 
-The joint qqplot looks normal. The marginal looks less nice. 
+Note that due to the removal of entries with missing values, our
+experimental set up is not balanced. Hence, it is controversial to
+report p-values for F or t statistics as there are no analytical results
+for null distributions of parameter estimates in complex situations
+(e.g., unbalanced or partially crossed designs) [Bates 2015]. 
 
+The package `lmerTest` makes availbale an analysis of variance of Type
+III with Satterthwaite approximation for degrees of freedom.
 
-## p-values
-
-Although controversial we report the Anova of type III with Satterwhite approximation:
 
 ```{r anova, message=FALSE, warning=FALSE}
 require(lmerTest)
+lmm<- lmer(log(Time) ~ Type + LangLev + List + Type:LangLev + (1 | List:Subject)+ (1 | List:Type:Trial),
+           data = DLM, REML=FALSE)
 anova(lmm)
 ```
 ```{r results='asis', echo=FALSE}
@@ -172,38 +177,48 @@ summary(lmm, transform="log")
 ```
 
 
-We observe that the two random effects, subjects and trials, account for a good portion of the standard deviation of the residuals: 0.2569, 0.1553, 0.3839 respectively. The model is translated by means of a significant intercept. The estimated effects are in the transformed scale.
+We observe that the two random effects, subjects and trials, account for
+a good portion of the standard deviation of the residuals 
+`r attr(VarCorr(lmm),"sc")`, 
+namely, for
+`r attr(VarCorr(lmm)$"List:Subject","stddev")` and 
+`r attr(VarCorr(lmm)$"List:Type:Trial","stddev")`, 
+respectively. The model
+is translated by means of a significant intercept. The estimated effects
+are in the log transformed scale.
 
-Note that due to the removal of entries with missing values, our experimental set up is not balanced. Hence, it is controversial to report p-values for F or t statistics as there are no analytical results for null distributions of parameter estimates in complex situations (e.g., unbalanced or partially crossed designs) [Bates 2015].
-The likelihood ratio test for each individual factors results non significant at a level of 0.05 for the `Type` (0.8815) and for the interaction `Type:Lang` (0.3291). The other fixed and random effects are all significant. The package lmerTest makes availbale an analysis of variance of Type III  with  Satterthwaite 
-approximation for degrees of freedom and a backward elimination of non-significant effects. Both these two procedures confirm our results that  `Type` and `Type:Lang` are not significant.
 
-The statistical significance seems confirmed by boostrap confidence intervals:
-```{r confintstd, echo=FALSE, eval=FALSE}
+These results on the statistical significance of the terms are confirmed
+also by backward elimination of non-significant effects and by boostrap
+confidence intervals:
+```{r confintstd, echo=TRUE, eval=TRUE}
 #confint(lmm,method="Wald")
 confint(lmm,method="boot")
 ```
 
-
-
-We also include the analysis via `merTools` package that calculates simulated values of the (fixed and random) effects from the posterior using the function `arm::sim`:
+We also observed the analysis by the `merTools` package that calculates
+simulated values of the (fixed and random) effects from the posterior
+using the function `arm::sim`:
 ```{r simulconfint, height=6, width=4, echo=TRUE}
-### detach("package:lmerTest",unload=TRUE)
-### require(merTools)
-### lmm <- lmer(formula = log(Time) ~ Lang + (1 | List:Subject) + 
-###     (1 | List:Type:Trial), data = DLM, REML = FALSE)
-### plotREsim(REsim(lmm, n.sims= 100), level=0.95, stat="mean")
-### plotFEsim(FEsim(lmm, n.sims = 100), level = 0.95, stat = 'mean', intercept = FALSE)
+detach("package:lmerTest",unload=TRUE)
+require(merTools)
+lmm <- lmer(formula = log(Time) ~ Type + LangLev + List + Type:LangLev + (1 | List:Subject) + 
+    (1 | List:Type:Trial), data = DLM, REML = FALSE)
+plotREsim(REsim(lmm, n.sims= 100), level=0.95, stat="mean", sd = TRUE)
+plotFEsim(FEsim(lmm, n.sims = 100), level = 0.95, stat = 'mean', intercept = FALSE, sd=TRUE)
 ```
+
+These plots also confirm our conclusions that `Type`, `List` and
+`Type:LangLev` are not significant.
 
 
 ## Conclusions
 
 We plot the random and the fixed effects together with their 95%
-confidence levels in the Figure. The confidence levels are obtained by
+confidence levels in the figure. The confidence levels are obtained by
 the estimated standard deviation and the normal distribution. However,
-other analysis with boostrapped confidence intervals confirmed the
-same conclusions.
+other analysis with boostrapped confidence intervals confirmed the same
+conclusions.
 
 
 ```{r randomeff, height=6, width=4, echo=FALSE}
@@ -216,15 +231,66 @@ randeff.plot2(lmm)
 
 
 ```{r fixedplot, height=4, width=5, echo=FALSE}
-### plot(effects::Effect(c("Lang"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="milliseconds",xlab="Speakers",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black")) 
+require("effects")
+
+plot(effects::Effect(c("LangLev"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="Response time [ms]",xlab="Language level",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black"))
+
+plot(effects::Effect(c("Type"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="Response time [ms]",xlab="Type",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black"))
+
+plot(effects::Effect(c("List"), lmm, transformation=list(link=log, inverse=exp)),cex=1,width=0,lwd=1,ylab="Response time [ms]",xlab="List",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),colors=c("grey35","black"))
+
+plot(effects::Effect(c("LangLev", "Type"), lmm, transformation=list(link=log, inverse=exp)),x.var="Type",cex=1,width=0,lwd=1,ylab="Response time [ms]",main="", bg="grey50",fg="black",alternating=FALSE,par.settings = ggplot2like(),lines.title=0,between=list(x=1),as.table=TRUE,colors=c("grey35","black")) 
 ```
 
 
-From the figure we can observe that the random effects cause often a significant effect by shifting the intercept by a quantity larger than zero. For the fixed effects we transformed back the effects in the linear time scale of milliseconds. It is evident that L1 speakers have a shorter reaction time and that the Type does not have a significant impact.
+From the figure we can observe that the random effects cause often a
+significant effect by shifting the intercept by a quantity larger than
+zero. For the fixed effects we transformed back the effects in the
+linear time scale of milliseconds. It is evident that L1 speakers have a
+shorter reaction time and that `Type` and `List` do not have a
+significant impact.
 
 
 <!--
 ## op <- options(contrasts = c("contr.sum", "contr.poly"))
 # Type + CoR + Hand + EO + List + CEF + SRRC + Pre + Post + Post2 + STAY + LeaYrs + DUH + RPV + AMGE + AECI, 
 -->
+
+
+
+## Diagnostic plots
+
+```{r plotlmr, fig.height=8, echo=FALSE}
+#lmm<- glmer(Time ~ LangLev + Type + (1 | Subject)+ (1 | Type:List:Type:Trial), data = DLM,family=Gamma(link = "log"))
+par(mfrow=c(2,2))
+# plot(lm4,which=1:4)
+
+plot(fitted(lmm, Type = "response"), residuals(lmm, Type = "response"),
+     main = "Conditional residuals", xlab = "Predicted", ylab = "Residuals")
+
+res <- residuals(lmm, Type = "response")
+qqnorm(res, main = "Conditional residuals, QQplot")
+qqline(res)
+
+lm.0 <- lm(log(Time) ~  LangLev + Type + List + Type:LangLev, data = DLM)
+x <- model.matrix(lm.0)
+pred <- x %*% fixef(lmm)
+res <- DLM$Time - pred
+plot(pred, res, main = "Marginal residuals", xlab = "Predicted", ylab = "Residuals")
+qqnorm(res, main = "Marginal residuals, QQplot")
+qqline(res)
+
+```
+
+```{r plot1, fig.width=3, echo=FALSE, eval=FALSE}
+plot(lmm,Type=c("p","smooth"))
+plot(lmm,sqrt(abs(resid(.))) ~ fitted(.), Type=c("p","smooth"))
+qqmath(lmm,id=0.005)
+# package HLMdiag influence.ME
+```
+
+
+The joint qqplot looks normal. The marginal look less compliant with
+the normality assumptions. 
+
 

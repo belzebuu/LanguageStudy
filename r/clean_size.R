@@ -5,7 +5,7 @@ D0<-read.csv("../data/factors_size.csv",na.strings="Err:512",sep=";",dec=".",hea
 #D<-rbind(data.frame(D0[1:23],time=D0[,24],type="MATCH"),data.frame(D0[1:23],time=D0[,25],type="MISMATCH"))
 ##D1<-D0 %>% select(Name,CoR,Hand,EO,List,CEF,SRRC,PRE,POST1,POST2,STAY,LEAYRS,HRSD,RPV,AMGE,AMSP)#,time,type) 
 # Student           Name Exp CoR Age Gender Hand EO List CEF SRRC    SRP  PRE POST1 POST2 POST12 A0A STAY LEAYRS  HRSD KNV RPV   AMSP AMGE
-D1<-D0 %>% select(Name,List,PRE,POST1,POST2,LEAYRS,HRSD,AMSP)#,time,type) 
+D1<-D0 %>% dplyr::select(Name,List,PRE,POST1,POST2,LEAYRS,HRSD,AMSP,CEF)#,time,type) 
 
 # %>% transmute(LanguageAge=Age-AoA)
 # D2<-D1[,c("Hand")] %>% mutate_each(funs(factor))
@@ -28,7 +28,7 @@ levels(Lists$V2)<-c(0,1)
 names(Lists)<-c("Name","List")
 D1<-full_join(D1,Lists,by="Name") %>% mutate(List=ifelse(is.na(List.y),as.character(List.x),as.character(List.y)))
 D1$List<-factor(D1$List)
-D1<-D1 %>% select(-List.x,-List.y)
+D1<-D1 %>% dplyr::select(-List.x,-List.y)
 
 
 L0 <- read.csv("../data/L2SpanishMatch.csv",na.strings="Err:512",sep=";",header=FALSE)
@@ -77,21 +77,32 @@ D10<-rbind(data.frame(DM,type="MATCH"),data.frame(DMM,type="MISMATCH"))
 D10$Name<-factor(D10$Name)
 
 
+
+## The native speakers are marked with 0 or 1, and the L2 learners are marked with 3=A2, 4=B1 and 5=B2+.
+
+Size$CEF <- factor(Size$CEF)
+levels(Size$CEF) <- c("A2","B1","B2+")
+names(Size)[8]<-"LangLev"
+
+
 # Bind together L1 and L2
-DDD <- rbind(data.frame(Size[c("Name", "List", "Order", "Time", "ID", "type")],Lang="L2"),data.frame(D10,Lang="L1"))
+DDD <- rbind(data.frame(Size[c("Name", "List", "Order", "Time", "ID", "type", "LangLev")],Lang="L2"),data.frame(D10,LangLev="L1",Lang="L1"))
 DDD$Name<-factor(DDD$Name)
 SizeL1L2<-DDD
+
+
+
 
 
 source("lib.R")
 levels(Size$Name)<-anonymize.wrap(levels(Size$Name))
 levels(SizeL1L2$Name)<-anonymize.wrap(levels(SizeL1L2$Name))
 
-Size<-Size %>% select(-POST2,-LEA,-ID)
-names(Size)<-c("Subject","Pre","Post","LeaYrs","DUH","AECI","List","Trial","Time","Type")
+Size<-Size %>% dplyr::select(-POST2,-LEA,-ID)
+names(Size)<-c("Subject","Pre","Post","LeaYrs","DUH","AECI","LangLev","List","Trial","Time","Type")
 
-SizeL1L2<-SizeL1L2 %>% select(-ID)
-names(SizeL1L2)<-c("Subject","List","Trial","Time","Type","Lang")
+SizeL1L2<-SizeL1L2 %>% dplyr::select(-ID)
+names(SizeL1L2)<-c("Subject","List","Trial","Time","Type","LangLev","Lang")
 
 save(Size,SizeL1L2,file="size.RData")
 
