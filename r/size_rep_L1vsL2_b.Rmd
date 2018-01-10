@@ -92,22 +92,22 @@ lmm.5 <- update(lmm,.~.-(1 | List:Type:Trial))
 anova(lmm.5,lmm)
 ```
 
-
 and for the fixed factors: 
 
 ```{r mixedmodels2, warning=FALSE}
 lmm.0 <- lmer(log(Time) ~ (1 | List:Subject)+ (1 | List:Type:Trial), data = DLM)
-lmm.1 <- update(lmm.0, .~. + Type)
+lmm.1 <- update(lmm.0, .~. + List)
 anova(lmm.0,lmm.1)
 
-lmm.2 <- update(lmm.0, .~. + LangLev)
+lmm.2 <- update(lmm.0, .~. + Type)
 anova(lmm.0,lmm.2)
 
-lmm.3 <- update(lmm.0, .~. + LangLev:Type)
+lmm.3 <- update(lmm.0, .~. + LangLev)
 anova(lmm.0,lmm.3)
 
-lmm.4 <- update(lmm.0, .~. + List)
-anova(lmm.0,lmm.4)
+lmm.4 <- update(lmm.0, .~. + List + Type + LangLev)
+lmm.5 <- update(lmm.4, .~. + LangLev:Type)
+anova(lmm.4,lmm.5)
 ```
 
 We see that `Type` and `LangLev` are significant. 

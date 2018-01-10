@@ -88,9 +88,10 @@ names(Size)[8]<-"LangLev"
 # Bind together L1 and L2
 DDD <- rbind(data.frame(Size[c("Name", "List", "Order", "Time", "ID", "type", "LangLev")],Lang="L2"),data.frame(D10,LangLev="L1",Lang="L1"))
 DDD$Name<-factor(DDD$Name)
+
+DDD$LangLev<-factor(DDD$LangLev, levels=c("A2", "B1", "B2+", "L1"), ordered=FALSE)
+
 SizeL1L2<-DDD
-
-
 
 
 
