@@ -125,18 +125,18 @@ anova(lmm.5,lmm)
 As far as fixed effects are concerned, only `LangLev` is significant:
 
 ```{r mixedmodels2, warning=FALSE, eval=TRUE, echo=TRUE}
-lmm.0 <- lmer(log(Time) ~ (1 | List:Subject)+ (1 | List:Type:Trial), data = DLM)
-lmm.1 <- update(lmm.0, .~. + Type)
-anova(lmm.0,lmm.1)
+#lmm.0 <- lmer(log(Time) ~ (1 | List:Subject)+ (1 | List:Type:Trial), data = DLM)
+lmm.1 <- update(lmm, .~. - Type - Type:LangLev)
+anova(lmm,lmm.1)
 
-lmm.2 <- update(lmm.0, .~. + LangLev)
-anova(lmm.0,lmm.2)
+lmm.2 <- update(lmm, .~. - LangLev - Type:LangLev)
+anova(lmm,lmm.2)
 
-lmm.3 <- update(lmm.0, .~. + Type:LangLev)
-anova(lmm.0,lmm.3)
+lmm.3 <- update(lmm, .~. - Type:LangLev)
+anova(lmm,lmm.3)
 
-lmm.4 <- update(lmm.0, .~. + List)
-anova(lmm.0,lmm.4)
+lmm.4 <- update(lmm, .~. - List)
+anova(lmm,lmm.4)
 ```
 
 ## Analysis of Variance
@@ -163,7 +163,7 @@ III with Satterthwaite approximation for degrees of freedom.
 require(lmerTest)
 lmm<- lmer(log(Time) ~ Type + LangLev + List + Type:LangLev + (1 | List:Subject)+ (1 | List:Type:Trial),
            data = DLM, REML=FALSE)
-anova(lmm)
+anova(lmm, type=3)
 ```
 ```{r results='asis', echo=FALSE}
 #library(xtable)

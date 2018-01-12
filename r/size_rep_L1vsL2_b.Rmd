@@ -75,7 +75,7 @@ lmm<- lmer(log(Time) ~ Type + LangLev + List + LangLev:Type + (1 | List:Subject)
 
 
 
-### Likelihood Ratio Tests
+## Likelihood Ratio Tests
 
 For the random factors:
 
@@ -95,19 +95,18 @@ anova(lmm.5,lmm)
 and for the fixed factors: 
 
 ```{r mixedmodels2, warning=FALSE}
-lmm.0 <- lmer(log(Time) ~ (1 | List:Subject)+ (1 | List:Type:Trial), data = DLM)
-lmm.1 <- update(lmm.0, .~. + List)
-anova(lmm.0,lmm.1)
+# lmm.0 <- lmer(log(Time) ~ (1 | List:Subject)+ (1 | List:Type:Trial), data = DLM)
+lmm.1 <- update(lmm, .~. - List)
+anova(lmm.1,lmm)
 
-lmm.2 <- update(lmm.0, .~. + Type)
-anova(lmm.0,lmm.2)
+lmm.2 <- update(lmm, .~. - Type - LangLev:Type)
+anova(lmm.2,lmm)
 
-lmm.3 <- update(lmm.0, .~. + LangLev)
-anova(lmm.0,lmm.3)
+lmm.3 <- update(lmm, .~. - LangLev - LangLev:Type)
+anova(lmm.3,lmm)
 
-lmm.4 <- update(lmm.0, .~. + List + Type + LangLev)
-lmm.5 <- update(lmm.4, .~. + LangLev:Type)
-anova(lmm.4,lmm.5)
+lmm.4 <- update(lmm, .~. - LangLev:Type)
+anova(lmm.4,lmm)
 ```
 
 We see that `Type` and `LangLev` are significant. 
@@ -124,7 +123,7 @@ details.
 ```{r anova, message=FALSE, warning=FALSE}
 require(lmerTest)
 lmm<- lmer(log(Time) ~ Type + LangLev + List + LangLev:Type + (1 | List:Subject)+ (1 | List:Type:Trial), data = DLM, REML=FALSE)
-anova(lmm)
+anova(lmm,type=3)
 ```
 
 and the effects with t test:
