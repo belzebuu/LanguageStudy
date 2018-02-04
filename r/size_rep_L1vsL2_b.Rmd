@@ -46,7 +46,7 @@ DLM$Subject<-factor(DLM$Subject)
 num<-DLM %>% group_by(LangLev,List) %>% summarize(n_distinct(Subject))
 ```
 
-After removal of entries with missing data due to wrong answers, 
+After removal of entries with missing data due to "No answers", 
 we have `r sum(num[,3])` subjects in total
 and `r dim(DLM)[1]` observations left. The
 subjects are distributed as follows:
@@ -189,12 +189,8 @@ plot(effects::Effect(c("LangLev", "Type"), lmm, transformation=list(link=log, in
 ```
 
 
+We conclude that L1 speakers have shorter reaction times than L2 speakers under both experimental conditions of MATCH and MISMATCH questions. Participants reacted slower to MISMATCH trials than MATCH trials, which confirms our main hypothesis and support simulation of size. The effect was shown to be significant from a bootstrap analysis on the transformed data.
 
-We conclude that L1 speakers have shorter reaction times than L2
-speakers under both experimental conditions of MATCH and MISMATCH
-questions. In addtion, MISMATCH questions seem slightly more difficult
-to be answered. This effect was shown to be significant from a bootstrap
-analysis on the transformed data.
 
 
 ## Diagnostic plots

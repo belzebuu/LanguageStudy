@@ -3,7 +3,8 @@
 We report in this repository the analysis in R of the data from the
 paper:
 
-"Mental simulation of object orientation and size – A conceptual replication with second language learners." Dietha Koster et al.
+"Mental simulation of object orientation and size – A conceptual replication with second language learners." 
+Dietha Koster et al.
 
 
 
