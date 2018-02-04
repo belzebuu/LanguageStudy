@@ -3,8 +3,7 @@
 We report in this repository the analysis in R of the data from the
 paper:
 
-"Do orientation and size matter? Simulating object properties in a
-native or second language". Dietha Koster et al.
+"Mental simulation of object orientation and size – A conceptual replication with second language learners." Dietha Koster et al.
 
 
 
